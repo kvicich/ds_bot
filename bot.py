@@ -2,29 +2,6 @@ import os
 import discord
 from discord.ext import commands
 import logging
-import threading
-import time
-
-def loading_animation():
-    symbols = ['-', '/', '|', '\\']
-    index = 0
-    while not done:
-        print(f'Запуск бота... {symbols[index]} - Последнее действие: {last_action}', end='\r')
-        index = (index + 1) % len(symbols)
-        time.sleep(0.25)
-
-done = False
-last_action = None
-
-def bot_action(action):
-    global last_action
-    last_action = action
-
-# Запускаем анимацию в отдельном потоке
-thread = threading.Thread(target=loading_animation)
-thread.start()
-
-bot_action('Инициализация')
 
 logger = logging.getLogger('discord_bot')
 intents = discord.Intents.default()
@@ -32,9 +9,43 @@ intents.messages = True
 
 bot = commands.Bot(command_prefix='/', intents=intents)
 
-# Штучка консольку чистить
-def clear_console():
-    os.system('cls' if os.name == 'nt' else 'clear')
+def get_token():
+    token_directory = os.path.dirname(os.path.abspath(__file__))
+    token_file_path = os.path.join(token_directory, "TOKEN.txt")
+
+    if os.path.exists(token_file_path):
+        with open(token_file_path, "r") as file:
+            token = file.read().strip()
+            if token:
+                return token
+            else:
+                print("Токен не найден в файле TOKEN.txt")
+                return None
+    else:
+        print("Файл TOKEN.txt не найден")
+        token = input("Введите токен: ")
+        try:
+            with open(token_file_path, "w") as file:
+                file.write(token)
+                print("Токен успешно записан в файл!")
+            return token
+        except Exception as e:
+            print(f"Не удалось записать токен в файл: {e}")
+            return None
+
+token = get_token()
+
+if token is not None:
+    # Здесь вы можете использовать переменную token для запуска вашего бота
+    pass
+else:
+    print("Не удалось получить токен. Программа будет закрыта.")
+    exit()
+
+@bot.event
+async def on_ready():
+    print(f"Бот запущен, его имя {bot.user.name}")
+
 
 @bot.command(name='start')
 async def start_cmd(ctx):
@@ -43,17 +54,12 @@ async def start_cmd(ctx):
     await ctx.send(f'Приветствую, это на данный момент тестовая команда. Все команды: /help Имя бота: {bot.user.name}. Твой юзернейм: {user_name}. Имя сервера: {guild_name}. Тестовое эмодзи: :fly: ')
 
 def Main():
-    bot_action('Бот запущен')
-    global done
     # Выводим логи в консоль
     logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
                         level=logging.INFO)
-    # Останавливаем анимацию
-    done = True
-    thread.join()
-    clear_console()
 
     # Запускаем бота
+    bot.run(token)
 
-    bot.add_command('work')
-    bot.run('MTIwMzc0ODgyMDAwMjAxNzM3MQ.G6ESsa.TGwsXWtdhFGK_JOyOU2FMrMYEbSf1ltcQLQDsw')
+if __name__ == '__main__':
+    Main()
