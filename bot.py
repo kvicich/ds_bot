@@ -46,7 +46,6 @@ else:
 async def on_ready():
     print(f"Бот запущен, его имя {bot.user.name}")
 
-
 @bot.command(name='start')
 async def start_cmd(ctx):
     user_name = ctx.author.name
