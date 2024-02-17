@@ -70,8 +70,8 @@ async def work_cmd(ctx):
     last_work_time = bot.last_work_time.get(server_id, {})
     if user_id in last_work_time:
         time_elapsed = current_time - last_work_time[user_id]
-        if time_elapsed < 60 * 15:
-            time_left = 60 * 15 - time_elapsed
+        if time_elapsed < 1 * 1:
+            time_left = 1 * 1 - time_elapsed
             await ctx.send(f'{ctx.author.mention}, вы уже работали недавно. Подождите еще {int(time_left)} секунд.')
             return
     last_work_time[user_id] = current_time
@@ -99,7 +99,7 @@ async def balance_cmd(ctx):
     server_id = str(ctx.guild.id)
     user_data = load_user_data(server_id, user_id)
     user_balance = user_data.get("balance", 0)
-    await ctx.send(f'{ctx.author.mention}, ваш текущий баланс: {user_balance} валюты')
+    await ctx.send(f'{ctx.author.mention}, ваш текущий баланс: {user_balance} :coin:')
 
 @bot.event
 async def on_error(event, *args, **kwargs):
