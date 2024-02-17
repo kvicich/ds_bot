@@ -6,10 +6,12 @@ import logging
 import random
 import time
 
+SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
+
 logger = logging.getLogger('discord_bot')
 intents = discord.Intents.default()
 intents.messages = True
-# Выводим логи в консоль
+
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
@@ -29,8 +31,6 @@ def file_checker(file_path, server_id):
     else:
         print(f"Папка {server_dir} уже существует.")
 
-SERVERS_DATA_DIR = "servers_data"
-
 def user_data_path(server_id, user_id):
     return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
 
@@ -40,7 +40,6 @@ def load_user_data(server_id, user_id):
         with open(data_path, "r") as f:
             return json.load(f)
     else:
-        # Если файл данных пользователя отсутствует, создаем новый и возвращаем пустой словарь
         with open(data_path, "w") as f:
             json.dump({}, f)
         return {}
@@ -54,7 +53,6 @@ def save_user_data(server_id, user_id, data):
 async def on_ready():
     print(f"Бот запущен, его имя {bot.user.name}")
 
-# Функция для начисления валюты за работу
 def work_currency():
     return random.randint(15, 135)
 
@@ -72,7 +70,7 @@ async def work_cmd(ctx):
     last_work_time = bot.last_work_time.get(server_id, {})
     if user_id in last_work_time:
         time_elapsed = current_time - last_work_time[user_id]
-        if time_elapsed < 60 * 15:  # 60 * 15 = 15 минут, число 15 отвечает за время
+        if time_elapsed < 60 * 15:
             time_left = 60 * 15 - time_elapsed
             await ctx.send(f'{ctx.author.mention}, вы уже работали недавно. Подождите еще {int(time_left)} секунд.')
             return
@@ -85,22 +83,12 @@ async def work_cmd(ctx):
         messages = file.readlines()
         work_message = random.choice(messages).strip()
 
-    # Загрузка данных пользователя
     user_data = load_user_data(server_id, user_id)
-    
-    # Получение баланса пользователя с учетом возможного отсутствия ключа 'balance'
     user_balance = user_data.get("balance", 0)
-    
-    # Увеличение баланса на заработанную валюту
     user_balance += currency_earned
-
-    # Обновление данных пользователя
     user_data["balance"] = user_balance
-    
-    # Сохранение данных пользователя
     save_user_data(server_id, user_id, user_data)
 
-    # Заменяем {currency_earned} на фактическое значение в сообщении
     work_message = work_message.replace("{currency_earned}", str(currency_earned))
     
     await ctx.send(f'{ctx.author.mention}, {work_message}.')
@@ -109,13 +97,8 @@ async def work_cmd(ctx):
 async def balance_cmd(ctx):
     user_id = str(ctx.author.id)
     server_id = str(ctx.guild.id)
-    
-    # Загрузка данных пользователя
     user_data = load_user_data(server_id, user_id)
-    
-    # Получение баланса пользователя с учетом возможного отсутствия ключа 'balance'
     user_balance = user_data.get("balance", 0)
-
     await ctx.send(f'{ctx.author.mention}, ваш текущий баланс: {user_balance} валюты')
 
 @bot.event
@@ -125,7 +108,6 @@ async def on_error(event, *args, **kwargs):
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
     token_file_path = os.path.join(token_directory, "TOKEN.txt")
-
     if os.path.exists(token_file_path):
         try:
             with open(token_file_path, "r") as file:
@@ -150,11 +132,12 @@ async def ping(ctx):
     await ctx.send(f"Время пинга: {ping_time} мс")
 
 def main():
-    file_checker("work_message.txt") # Проверяем наличие файлов
-    bot.last_work_time = {} # Словарь для хранения времени последнего использования команды /work для каждого сервера
+    server_id = "your_server_id_value"
+    file_checker("work_message.txt", server_id)
+    bot.last_work_time = {}
     token = get_token()
     if token is not None:
-        bot.run(token) # Запускаем бота
+        bot.run(token)
     else:
         logger.error("Не удалось получить токен. Бот выключается...")
 
