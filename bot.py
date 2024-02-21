@@ -22,20 +22,22 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
 
 bot = commands.Bot(command_prefix='/', intents=intents)
 
-# Проверка наличия файла и создание его при необходимости
+# Проверка наличия папки сервера и создание ее, если она отсутствует
+def ensure_server_data_dir(server_id):
+    server_dir = os.path.join(SERVERS_DATA_DIR, str(server_id))
+    if not os.path.exists(server_dir):
+        os.makedirs(server_dir)
+
 def file_checker(file_path, server_id):
+    ensure_server_data_dir(server_id)
+    file_path = os.path.join(SERVERS_DATA_DIR, str(server_id), os.path.basename(file_path))
+
     if not os.path.exists(file_path):
         with open(file_path, 'w'):
             pass
         print(f"Файл {file_path} был создан.")
     else:
         print(f"Файл {file_path} уже существует.")
-    server_dir = os.path.join(SERVERS_DATA_DIR, str(server_id))
-    if not os.path.exists(server_dir):
-        os.makedirs(server_dir)
-    else:
-        print(f"Папка {server_dir} уже существует.")
-
 def user_data_path(server_id, user_id):
     return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
 
