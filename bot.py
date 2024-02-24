@@ -12,6 +12,7 @@ WORK_COOLDOWN = 1 # Время в секундах между попытками
 STEAL_COOLDOWN = 5  # Время в секундах между попытками кражи
 FAILED_STEAL_MIN_LOSS = 1 # Минимальная потеря монет
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет
+BASE_JOIN_SAMPLE_FILE = "base-join-sample.txt" # Тут хранится базовый пример
 
 logger = logging.getLogger('discord_bot')
 intents = discord.Intents.default()
@@ -22,26 +23,25 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
 
 bot = commands.Bot(command_prefix='/', intents=intents)
 
+@bot.event
+async def on_ready():
+    print(f"Bot is ready, logged in as {bot.user.name}")
+
 # Проверка наличия папки сервера и создание ее, если она отсутствует
 def ensure_server_data_dir(server_id):
     server_dir = os.path.join(SERVERS_DATA_DIR, str(server_id))
     if not os.path.exists(server_dir):
         os.makedirs(server_dir)
 
-def file_checker(file_path, server_id):
-    ensure_server_data_dir(server_id)
-    file_path = os.path.join(SERVERS_DATA_DIR, str(server_id), os.path.basename(file_path))
+# В начале файла, после импортов и объявления переменных
+def ensure_server_data_dir(server_id):
+    server_dir = os.path.join(SERVERS_DATA_DIR, str(server_id))
+    if not os.path.exists(server_dir):
+        os.makedirs(server_dir)
 
-    if not os.path.exists(file_path):
-        with open(file_path, 'w'):
-            pass
-        print(f"Файл {file_path} был создан.")
-    else:
-        print(f"Файл {file_path} уже существует.")
-def user_data_path(server_id, user_id):
-    return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
-
+# В функции load_user_data
 def load_user_data(server_id, user_id):
+    ensure_server_data_dir(server_id)
     data_path = user_data_path(server_id, user_id)
     if os.path.exists(data_path):
         with open(data_path, "r") as f:
@@ -51,17 +51,76 @@ def load_user_data(server_id, user_id):
             json.dump({}, f)
         return {}
 
+# В функции save_user_data
 def save_user_data(server_id, user_id, data):
+    ensure_server_data_dir(server_id)
     data_path = user_data_path(server_id, user_id)
     with open(data_path, "w") as f:
         json.dump(data, f)
 
-@bot.event
-async def on_ready():
-    print(f"Бот запущен, его имя {bot.user.name}")
+# В функции file_checker
+def file_checker(file_path, server_id):
+    ensure_server_data_dir(server_id)
+    server_dir = os.path.join(SERVERS_DATA_DIR, str(server_id))
+    if not os.path.exists(server_dir):
+        os.makedirs(server_dir)
+        print(f"Папка для сервера с ID {server_id} была создана.")
+
+    file_name = os.path.basename(file_path)
+    file_path = os.path.join(server_dir, file_name)
+
+    if not os.path.exists(file_path):
+        with open(file_path, 'w'):
+            pass
+        print(f"Файл {file_name} для сервера с ID {server_id} был создан.")
+    else:
+        print(f"Файл {file_name} для сервера с ID {server_id} уже существует.")
+
+def user_data_path(server_id, user_id):
+    return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
 
 def work_currency():
     return random.randint(15, 135)
+
+@bot.event
+async def on_member_join(member):
+    server_id = str(member.guild.id)
+    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+    join_sample_file = os.path.join(data_dir, "join_sample.txt")
+    base_join_sample_file = os.path.join(BASE_JOIN_SAMPLE_FILE)
+
+    if os.path.exists(join_sample_file):
+        with open(join_sample_file, "r") as f:
+            join_message = f.read()
+    elif os.path.exists(base_join_sample_file):
+        with open(base_join_sample_file, "r") as f:
+            join_message = f.read()
+    else:
+        join_message = f"Welcome {member.mention} to {member.guild.name}!"
+
+    join_message = join_message.replace("{user_name}", str(member))
+
+    join_channel_file = os.path.join(data_dir, "join_channel.txt")
+
+    if os.path.exists(join_channel_file):
+        with open(join_channel_file, "r") as f:
+            channel_id = int(f.read())
+        channel = bot.get_channel(channel_id)
+        if channel:
+            await channel.send(join_message)
+
+@bot.event
+async def on_member_remove(member):
+    server_id = str(member.guild.id)
+    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+    leave_channel_file = os.path.join(data_dir, "leave_channel.txt")
+
+    if os.path.exists(leave_channel_file):
+        with open(leave_channel_file, "r") as f:
+            channel_id = int(f.read())
+        channel = bot.get_channel(channel_id)
+        if channel:
+            await channel.send(f"Goodbye {member}!")
 
 @bot.command(name='start')
 async def start_cmd(ctx):
@@ -69,8 +128,8 @@ async def start_cmd(ctx):
     guild_name = ctx.guild.name
     await ctx.send(f'Приветствую, это на данный момент тестовая команда. Все команды: /help Имя бота: {bot.user.name}. Твой юзернейм: {user_name}. Имя сервера: {guild_name}. Тестовое эмодзи: :fly: ')
 
-@bot.command(name='work')
-async def work_cmd(ctx):
+@bot.command(name='SideJob')
+async def SideJob_cmd(ctx):
     user_id = str(ctx.author.id)
     server_id = str(ctx.guild.id)
     current_time = time.time()
@@ -150,6 +209,97 @@ async def steal_cmd(ctx):
 @bot.event
 async def on_error(event, *args, **kwargs):
     logger.error(f"Произошла ошибка в событии {event}", exc_info=True)
+    
+@bot.command(name='ping')
+async def ping(ctx):
+    start_time = time.time()
+    message = await ctx.send("Измеряю пинг...")
+    end_time = time.time()
+    ping_time = round((end_time - start_time) * 1000)
+    await message.edit(content=f"Время пинга: {ping_time} мс")
+
+@bot.command(name='set-join-ch')
+async def set_join_channel(ctx):
+    channel = ctx.message.channel
+    server_id = str(ctx.guild.id)
+    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+
+    with open(os.path.join(data_dir, "join_channel.txt"), "w") as f:
+        f.write(str(channel.id))
+    await ctx.send(f"Join channel set to {channel.mention}")
+
+@bot.command(name='del-join-ch')
+async def delete_join_channel(ctx):
+    server_id = str(ctx.guild.id)
+    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+    join_channel_file = os.path.join(data_dir, "join_channel.txt")
+
+    if os.path.exists(join_channel_file):
+        os.remove(join_channel_file)
+        await ctx.send("Join channel deleted.")
+    else:
+        await ctx.send("Join channel not set.")
+
+@bot.command(name='set-join-sample')
+async def set_join_sample(ctx, *, template=None):
+    server_id = str(ctx.guild.id)
+    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+
+    if template:
+        with open(os.path.join(data_dir, "join_sample.txt"), "w") as f:
+            f.write(template)
+        await ctx.send("Custom join sample set.")
+    else:
+        await ctx.send("Please provide a template.")
+
+@bot.command(name='del-join-sample')
+async def delete_join_sample(ctx):
+    server_id = str(ctx.guild.id)
+    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+    join_sample_file = os.path.join(data_dir, "join_sample.txt")
+
+    if os.path.exists(join_sample_file):
+        os.remove(join_sample_file)
+        await ctx.send("Custom join sample deleted. Using base sample.")
+    else:
+        await ctx.send("Custom join sample not set.")
+
+@bot.command(name='view-join-sample')
+async def view_join_sample(ctx):
+    server_id = str(ctx.guild.id)
+    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+    join_sample_file = os.path.join(data_dir, "join_sample.txt")
+
+    if os.path.exists(join_sample_file):
+        with open(join_sample_file, "r") as f:
+            join_sample = f.read()
+        await ctx.send(f"Custom join sample:\n```{join_sample}```")
+    else:
+        await ctx.send("Custom join sample not set.")
+
+@bot.command(name='restore-join-sample')
+async def restore_join_sample(ctx):
+    server_id = str(ctx.guild.id)
+    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+    base_join_sample_file = os.path.join(BASE_JOIN_SAMPLE_FILE)
+
+    if os.path.exists(base_join_sample_file):
+        with open(base_join_sample_file, "r") as f:
+            base_join_sample = f.read()
+
+        join_sample_file = os.path.join(data_dir, "join_sample.txt")
+        with open(join_sample_file, "w") as f:
+            f.write(base_join_sample)
+
+        await ctx.send("Join sample restored to default.")
+    else:
+        await ctx.send("Base join sample not found.")
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
@@ -169,13 +319,6 @@ def get_token():
     else:
         logger.error("Файл TOKEN.txt не найден")
         return None
-    
-@bot.command(name='ping')
-async def ping(ctx):
-    start_time = time.time()
-    end_time = time.time()
-    ping_time = round((end_time - start_time) * 1000)
-    await ctx.send(f"Время пинга: {ping_time} мс")
 
 def main():
     server_id = "your_server_id_value"
