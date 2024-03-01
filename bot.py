@@ -11,6 +11,7 @@ SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверо
 WORK_COOLDOWN = 1 # Время в секундах между попытками зароботка
 STEAL_COOLDOWN = 5  # Время в секундах между попытками кражи
 FAILED_STEAL_MIN_LOSS = 1 # Минимальная потеря монет
+ADMIN_DATA_DIR = "servers_data"
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет
 BASE_JOIN_SAMPLE_FILE = "base-join-sample.txt" # Тут хранится базовый пример
 
@@ -25,15 +26,9 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f"Bot is ready, logged in as {bot.user.name}")
+    print(f"Бот запущен, его имя {bot.user.name}")
 
 # Проверка наличия папки сервера и создание ее, если она отсутствует
-def ensure_server_data_dir(server_id):
-    server_dir = os.path.join(SERVERS_DATA_DIR, str(server_id))
-    if not os.path.exists(server_dir):
-        os.makedirs(server_dir)
-
-# В начале файла, после импортов и объявления переменных
 def ensure_server_data_dir(server_id):
     server_dir = os.path.join(SERVERS_DATA_DIR, str(server_id))
     if not os.path.exists(server_dir):
@@ -79,48 +74,23 @@ def file_checker(file_path, server_id):
 def user_data_path(server_id, user_id):
     return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
 
-def work_currency():
-    return random.randint(15, 135)
+# Декоратор для проверки, является ли пользователь администратором
+def isAdmin(ctx):
+    admin_data_path = os.path.join(ADMIN_DATA_DIR, str(ctx.guild.id), "admins.json")
+    if os.path.exists(admin_data_path):
+        with open(admin_data_path, "r") as file:
+            admins = json.load(file)
+            return ctx.author.id in admins
+    return False
 
-@bot.event
-async def on_member_join(member):
-    server_id = str(member.guild.id)
-    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
-    join_sample_file = os.path.join(data_dir, "join_sample.txt")
-    base_join_sample_file = os.path.join(BASE_JOIN_SAMPLE_FILE)
-
-    if os.path.exists(join_sample_file):
-        with open(join_sample_file, "r") as f:
-            join_message = f.read()
-    elif os.path.exists(base_join_sample_file):
-        with open(base_join_sample_file, "r") as f:
-            join_message = f.read()
-    else:
-        join_message = f"Welcome {member.mention} to {member.guild.name}!"
-
-    join_message = join_message.replace("{user_name}", str(member))
-
-    join_channel_file = os.path.join(data_dir, "join_channel.txt")
-
-    if os.path.exists(join_channel_file):
-        with open(join_channel_file, "r") as f:
-            channel_id = int(f.read())
-        channel = bot.get_channel(channel_id)
-        if channel:
-            await channel.send(join_message)
-
-@bot.event
-async def on_member_remove(member):
-    server_id = str(member.guild.id)
-    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
-    leave_channel_file = os.path.join(data_dir, "leave_channel.txt")
-
-    if os.path.exists(leave_channel_file):
-        with open(leave_channel_file, "r") as f:
-            channel_id = int(f.read())
-        channel = bot.get_channel(channel_id)
-        if channel:
-            await channel.send(f"Goodbye {member}!")
+# Декоратор для команд, доступных только администраторам
+def admin_command(command):
+    async def wrapper(ctx, *args, **kwargs):
+        if isAdmin(ctx):
+            await command(ctx, *args, **kwargs)
+        else:
+            await ctx.send("У вас нет прав для выполнения этой команды.")
+    return wrapper
 
 @bot.command(name='start')
 async def start_cmd(ctx):
@@ -143,7 +113,7 @@ async def SideJob_cmd(ctx):
     last_work_time[user_id] = current_time
     bot.last_work_time[server_id] = last_work_time
 
-    currency_earned = work_currency()
+    currency_earned = random.randint(15, 135)
 
     with open("work_message.txt", "r", encoding="utf-8") as file:
         messages = file.readlines()
@@ -218,89 +188,6 @@ async def ping(ctx):
     ping_time = round((end_time - start_time) * 1000)
     await message.edit(content=f"Время пинга: {ping_time} мс")
 
-@bot.command(name='set-join-ch')
-async def set_join_channel(ctx):
-    channel = ctx.message.channel
-    server_id = str(ctx.guild.id)
-    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
-
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-
-    with open(os.path.join(data_dir, "join_channel.txt"), "w") as f:
-        f.write(str(channel.id))
-    await ctx.send(f"Join channel set to {channel.mention}")
-
-@bot.command(name='del-join-ch')
-async def delete_join_channel(ctx):
-    server_id = str(ctx.guild.id)
-    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
-    join_channel_file = os.path.join(data_dir, "join_channel.txt")
-
-    if os.path.exists(join_channel_file):
-        os.remove(join_channel_file)
-        await ctx.send("Join channel deleted.")
-    else:
-        await ctx.send("Join channel not set.")
-
-@bot.command(name='set-join-sample')
-async def set_join_sample(ctx, *, template=None):
-    server_id = str(ctx.guild.id)
-    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
-
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-
-    if template:
-        with open(os.path.join(data_dir, "join_sample.txt"), "w") as f:
-            f.write(template)
-        await ctx.send("Custom join sample set.")
-    else:
-        await ctx.send("Please provide a template.")
-
-@bot.command(name='del-join-sample')
-async def delete_join_sample(ctx):
-    server_id = str(ctx.guild.id)
-    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
-    join_sample_file = os.path.join(data_dir, "join_sample.txt")
-
-    if os.path.exists(join_sample_file):
-        os.remove(join_sample_file)
-        await ctx.send("Custom join sample deleted. Using base sample.")
-    else:
-        await ctx.send("Custom join sample not set.")
-
-@bot.command(name='view-join-sample')
-async def view_join_sample(ctx):
-    server_id = str(ctx.guild.id)
-    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
-    join_sample_file = os.path.join(data_dir, "join_sample.txt")
-
-    if os.path.exists(join_sample_file):
-        with open(join_sample_file, "r") as f:
-            join_sample = f.read()
-        await ctx.send(f"Custom join sample:\n```{join_sample}```")
-    else:
-        await ctx.send("Custom join sample not set.")
-
-@bot.command(name='restore-join-sample')
-async def restore_join_sample(ctx):
-    server_id = str(ctx.guild.id)
-    data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
-    base_join_sample_file = os.path.join(BASE_JOIN_SAMPLE_FILE)
-
-    if os.path.exists(base_join_sample_file):
-        with open(base_join_sample_file, "r") as f:
-            base_join_sample = f.read()
-
-        join_sample_file = os.path.join(data_dir, "join_sample.txt")
-        with open(join_sample_file, "w") as f:
-            f.write(base_join_sample)
-
-        await ctx.send("Join sample restored to default.")
-    else:
-        await ctx.send("Base join sample not found.")
-
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
     token_file_path = os.path.join(token_directory, "TOKEN.txt")
@@ -319,6 +206,48 @@ def get_token():
     else:
         logger.error("Файл TOKEN.txt не найден")
         return None
+
+# Команда для добавления администратора
+@bot.command(name='add_admin')
+@commands.has_permissions(administrator=True)
+async def add_admin(ctx, member: discord.Member):
+    admin_data_path = os.path.join(ADMIN_DATA_DIR, str(ctx.guild.id), "admins.json")
+    admin_dir = os.path.join(ADMIN_DATA_DIR, str(ctx.guild.id))
+
+    if not os.path.exists(admin_dir):
+        os.makedirs(admin_dir)
+
+    if os.path.exists(admin_data_path):
+        with open(admin_data_path, "r") as file:
+            admins = json.load(file)
+    else:
+        admins = []
+
+    admins.append(member.id)
+
+    with open(admin_data_path, "w") as file:
+        json.dump(admins, file)
+
+    await ctx.send(f"{member.mention} добавлен в список администраторов.")
+
+# Команда для удаления администратора
+@bot.command(name='rem_admin')
+@commands.has_permissions(administrator=True)
+async def rem_admin(ctx, member: discord.Member):
+    admin_data_path = os.path.join(ADMIN_DATA_DIR, str(ctx.guild.id), "admins.json")
+
+    if os.path.exists(admin_data_path):
+        with open(admin_data_path, "r") as file:
+            admins = json.load(file)
+        if member.id in admins:
+            admins.remove(member.id)
+            with open(admin_data_path, "w") as file:
+                json.dump(admins, file)
+            await ctx.send(f"{member.mention} удален из списка администраторов.")
+        else:
+            await ctx.send(f"{member.mention} не является администратором.")
+    else:
+        await ctx.send("На сервере нет администраторов.")
 
 def main():
     server_id = "your_server_id_value"
