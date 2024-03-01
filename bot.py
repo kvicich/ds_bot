@@ -15,6 +15,8 @@ FAILED_STEAL_MIN_LOSS = 1 # Минимальная потеря монет
 ADMIN_DATA_DIR = "servers_data"
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет
 BASE_JOIN_SAMPLE_FILE = "base-join-sample.txt" # Тут хранится базовый пример
+
+# Список криптовалют с начальными курсами и эмодзи
 CRYPTO_LIST = {
     'bitcoin': {'emoji': ':dvd:', 'price': random.randint(50000, 55000)},
     'ethereum': {'emoji': ':cd:', 'price': random.randint(10000, 15000)},
@@ -135,7 +137,6 @@ async def SideJob_cmd(ctx):
     
     await ctx.send(f'{ctx.author.mention}, {work_message}.')
 
-# Команда для просмотра текущего баланса и криптовалют
 @bot.command(name='balance')
 async def balance_cmd(ctx):
     user_id = str(ctx.author.id)
@@ -201,25 +202,6 @@ async def ping(ctx):
     ping_time = round((end_time - start_time) * 1000)
     await message.edit(content=f"Время пинга: {ping_time} мс")
 
-# Функция для генерации нового курса криптовалюты
-def generate_crypto_prices():
-    for currency in CRYPTO_LIST:
-        change_percent = random.uniform(-5, 5)  # Изменение на случайный процент от -5% до 5%
-        CRYPTO_LIST[currency]['price'] *= (1 + change_percent / 100)  # Применяем изменение
-
-# Замените функцию crypto_prices_generator() следующим кодом:
-async def crypto_prices_generator():
-    while True:
-        await asyncio.sleep(600)  # Пауза в 10 минут
-        generate_crypto_prices()
-        save_crypto_prices()
-
-# Замените код в функции crypto_prices_cmd() следующим кодом:
-@bot.command(name='crypto_prices')
-async def crypto_prices_cmd(ctx):
-    prices_str = '\n'.join([f"{CRYPTO_LIST[currency]['emoji']} {currency.capitalize()}: {CRYPTO_LIST[currency]['price']} USD" for currency in CRYPTO_LIST])
-    await ctx.send(f"Текущие курсы криптовалют:\n{prices_str}")
-
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
     token_file_path = os.path.join(token_directory, "TOKEN.txt")
@@ -239,7 +221,6 @@ def get_token():
         logger.error("Файл TOKEN.txt не найден")
         return None
 
-# Команда для добавления администратора
 @bot.command(name='add_admin')
 @commands.has_permissions(administrator=True)
 async def add_admin(ctx, member: discord.Member):
@@ -262,7 +243,6 @@ async def add_admin(ctx, member: discord.Member):
 
     await ctx.send(f"{member.mention} добавлен в список администраторов.")
 
-# Команда для удаления администратора
 @bot.command(name='rem_admin')
 @commands.has_permissions(administrator=True)
 async def rem_admin(ctx, member: discord.Member):
@@ -281,55 +261,69 @@ async def rem_admin(ctx, member: discord.Member):
     else:
         await ctx.send("На сервере нет администраторов.")
 
-# Функция для сохранения текущих курсов криптовалют
-def save_crypto_prices():
-    with open("crypto_prices.json", "w") as file:
-        json.dump(CRYPTO_LIST, file)
+# Функция для генерации нового курса криптовалюты
+def generate_crypto_prices():
+    for currency in CRYPTO_LIST:
+        # Изменение курса криптовалюты на случайный процент
+        percent_change = random.uniform(-0.1, 0.1)  # Процент изменения курса от -10% до +10%
+        CRYPTO_LIST[currency]['price'] *= 1 + percent_change
+        # Ограничение цены, чтобы она не стала отрицательной
+        CRYPTO_LIST[currency]['price'] = max(0, CRYPTO_LIST[currency]['price'])
 
-# Функция для загрузки текущих курсов криптовалют из файла
-def load_crypto_prices():
-    if os.path.exists("crypto_prices.json"):
-        with open("crypto_prices.json", "r") as file:
-            return json.load(file)
-    else:
-        return CRYPTO_LIST
+# Асинхронная функция, которая будет вызывать generate_crypto_prices каждые 10 минут
+async def update_crypto_prices():
+    while True:
+        generate_crypto_prices()
+        await asyncio.sleep(600)  # 600 секунд = 10 минут
 
-# Команда для обмена криптовалюты по текущему курсу
-# Синтаксис команды: /exchange [валюта_от] [валюта_в] [количество]
-# Пример использования: /exchange bitcoin bananacoin 10
-@bot.command(name='exchange')
-async def exchange_cmd(ctx, currency_from: str, currency_to: str, amount: int):
-    await exchange_crypto(ctx, currency_from.lower(), currency_to.lower(), amount)
+@bot.command(name='crypto_prices')
+async def crypto_prices_cmd(ctx):
+    prices_str = '\n'.join([f"{CRYPTO_LIST[currency]['emoji']} {currency.capitalize()}: {CRYPTO_LIST[currency]['price']} :coin:" for currency in CRYPTO_LIST])
+    await ctx.send(f"Текущие курсы криптовалют:\n{prices_str}")
 
-# Функция для обмена криптовалюты по текущему курсу
 async def exchange_crypto(ctx, currency_from, currency_to, amount):
     if currency_from in CRYPTO_LIST and currency_to in CRYPTO_LIST:
         if currency_from != currency_to:
             user_data = load_user_data(ctx.guild.id, ctx.author.id)
             crypto_wallet = user_data.get("crypto_wallet", {})
-            if crypto_wallet.get(currency_from, 0) >= amount:
-                exchange_rate = CRYPTO_LIST[currency_to]['price'] / CRYPTO_LIST[currency_from]['price']
-                received_amount = int(amount * exchange_rate)
-                crypto_wallet[currency_from] -= amount
-                crypto_wallet[currency_to] = crypto_wallet.get(currency_to, 0) + received_amount
-                user_data["crypto_wallet"] = crypto_wallet
-                save_user_data(ctx.guild.id, ctx.author.id, user_data)
-                await ctx.send(f"{ctx.author.mention}, вы обменяли {amount} {CRYPTO_LIST[currency_from]['emoji']} {currency_from.capitalize()} на {received_amount} {CRYPTO_LIST[currency_to]['emoji']} {currency_to.capitalize()}.")
+            if currency_from in crypto_wallet:
+                if crypto_wallet[currency_from] >= amount:
+                    price_from = CRYPTO_LIST[currency_from]['price']
+                    price_to = CRYPTO_LIST[currency_to]['price']
+                    total_price = price_from * amount / price_to
+                    if total_price > 0:
+                        crypto_wallet[currency_from] -= amount
+                        crypto_wallet[currency_to] = crypto_wallet.get(currency_to, 0) + total_price
+                        save_user_data(ctx.guild.id, ctx.author.id, user_data)
+                        return True, total_price
+                    else:
+                        return False, "Ошибка: нулевая цена"
+                else:
+                    return False, f"У вас недостаточно {currency_from}"
             else:
-                await ctx.send("У вас недостаточно указанной криптовалюты.")
+                return False, f"У вас нет {currency_from}"
         else:
-            await ctx.send("Нельзя обменять криптовалюту на ту же самую.")
+            return False, "Ошибка: невозможно обменять одну и ту же криптовалюту"
     else:
-        await ctx.send("Указанной криптовалюты нет в списке доступных.")
+        return False, "Ошибка: указанной криптовалюты не существует"
+
+@bot.command(name='exchange')
+async def exchange_cmd(ctx, currency_from, currency_to, amount):
+    success, message = await exchange_crypto(ctx, currency_from, currency_to, int(amount))
+    if success:
+        await ctx.send(f"Успешно обменяли {amount} {currency_from} на {message} {currency_to}")
+    else:
+        await ctx.send(message)
 
 def main():
     server_id = "your_server_id_value"
     file_checker("work_message.txt", server_id)
     bot.last_work_time = {}
     bot.last_steal_time = {}
-    bot.loop.create_task(crypto_prices_generator())  # Создание задачи генерации курсов криптовалют
     token = get_token()
     if token is not None:
+        # Запуск асинхронной задачи update_crypto_prices
+        asyncio.create_task(update_crypto_prices())
         bot.run(token)
     else:
         logger.error("Не удалось получить токен. Бот выключается...")
