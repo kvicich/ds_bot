@@ -1,0 +1,65 @@
+{
+    "Ant Miner S19KPro": {
+        "price": 15800,
+        "hashrate": "98/s",
+        "electricity_consumption": "12$/h",
+        "chance_of_failure": "2%/10min",
+        "supported_cryptos": [
+            "bitcoin"
+        ]
+    },
+    "Ant Miner S20KPro": {
+        "price": 23460,
+        "hashrate": "120/s",
+        "electricity_consumption": "16$/h",
+        "chance_of_failure": "1%/10min",
+        "supported_cryptos": [
+            "bitcoin"
+        ]
+    },
+    "Avalon 954": {
+        "price": 6300,
+        "hashrate": "640/s",
+        "electricity_consumption": "35$/h",
+        "chance_of_failure": "5%/10min",
+        "supported_cryptos": [
+            "bananacoin"
+        ]
+    },
+    "Avalon 1045": {
+        "price": 7400,
+        "hashrate": "735/s",
+        "electricity_consumption": "35$/h",
+        "chance_of_failure": "4%/10min",
+        "supported_cryptos": [
+            "bananacoin"
+        ]
+    },
+    "Ultra GPU 3060": {
+        "price": 38000,
+        "hashrate": "240/s",
+        "electricity_consumption": "20$/h",
+        "chance_of_failure": "6%/10min",
+        "supported_cryptos": [
+            "ethereum"
+        ]
+    },
+    "Ultra GPU 4060": {
+        "price": 42000,
+        "hashrate": "315/s",
+        "electricity_consumption": "18$/h",
+        "chance_of_failure": "2%/10min",
+        "supported_cryptos": [
+            "ethereum"
+        ]
+    },
+    "Ultra GPU 4070": {
+        "price": 45000.0,
+        "hashrate": "350/s",
+        "electricity_consumption": "20/h",
+        "chance_of_failure": "1%",
+        "supported_cryptos": [
+            "ethereum"
+        ]
+    }
+}
