@@ -11,10 +11,9 @@ import asyncio
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
 WORK_COOLDOWN = 1 # Время в секундах между попытками зароботка
 STEAL_COOLDOWN = 5  # Время в секундах между попытками кражи
-FAILED_STEAL_MIN_LOSS = 1 # Минимальная потеря монет
+FAILED_STEAL_MIN_LOSS = 1 # Минимальная потеря монет в /steal
 ADMIN_DATA_DIR = "servers_data"
-FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет
-BASE_JOIN_SAMPLE_FILE = "base-join-sample.txt" # Тут хранится базовый пример
+FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
 # Криптовалюты
 CRYPTO_LIST = {
     'bitcoin': {'emoji': ':dvd:', 'price': random.randint(50000, 55000)},
@@ -47,32 +46,20 @@ def load_user_data(server_id, user_id):
     else:
         with open(data_path, "w") as f:
             json.dump({}, f)
+        print("Была загружена дата пользователей")
         return {}
 
-# В функции save_user_data
+# А вот эта штучка сохраняет дату юзеров
 def save_user_data(server_id, user_id, data):
     ensure_server_data_dir(server_id)
     data_path = user_data_path(server_id, user_id)
     with open(data_path, "w") as f:
         json.dump(data, f)
+        print("Была сохранена дата пользователей")
 
-# В функции file_checker
-def file_checker(file_path, server_id):
+# Проверка файлов перед запуском
+def file_checker(server_id):
     ensure_server_data_dir(server_id)
-    server_dir = os.path.join(SERVERS_DATA_DIR, str(server_id))
-    if not os.path.exists(server_dir):
-        os.makedirs(server_dir)
-        print(f"Папка для сервера с ID {server_id} была создана.")
-
-    file_name = os.path.basename(file_path)
-    file_path = os.path.join(server_dir, file_name)
-
-    if not os.path.exists(file_path):
-        with open(file_path, 'w'):
-            pass
-        print(f"Файл {file_name} для сервера с ID {server_id} был создан.")
-    else:
-        print(f"Файл {file_name} для сервера с ID {server_id} уже существует.")
 
 def user_data_path(server_id, user_id):
     return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
@@ -139,9 +126,15 @@ async def balance_cmd(ctx):
     user_data = load_user_data(server_id, user_id)
     balance = user_data.get("balance", 0)
     crypto_wallet = user_data.get("crypto_wallet", {})
+    
     balance_str = f'**Баланс:** {balance} :coin:\n\n'
-    crypto_str = '\n'.join([f'{CRYPTO_LIST[currency]["emoji"]} {currency.capitalize()}: {amount}' for currency, amount in crypto_wallet.items()])
-    await ctx.send(f'{ctx.author.mention}, ваш текущий баланс и криптовалюты:\n\n{balance_str}{crypto_str}')
+    
+    crypto_str = ""
+    for currency in CRYPTO_LIST:
+        amount = crypto_wallet.get(currency, 0)
+        crypto_str += f'{CRYPTO_LIST[currency]["emoji"]} {currency.capitalize()}: {amount}\n'
+    
+    await ctx.send(f'{ctx.author.mention}, ваш текущий баланс:\n\n{balance_str}{crypto_str}')
 
 @bot.command(name='steal')
 async def steal_cmd(ctx):
@@ -190,44 +183,6 @@ async def ping(ctx):
     ping_time = round((end_time - start_time) * 1000)
     await message.edit(content=f"Время пинга: {ping_time} мс")
 
-# Функция для генерации нового курса криптовалюты
-def generate_crypto_prices():
-    for currency in CRYPTO_LIST:
-        change_percent = random.uniform(-5, 5)  # Изменение на случайный процент от -5% до 5%
-        CRYPTO_LIST[currency]['price'] *= (1 + change_percent / 100)  # Применяем изменение
-
-# Замените функцию crypto_prices_generator() следующим кодом:
-async def crypto_prices_generator():
-    while True:
-        await asyncio.sleep(600)  # Пауза в 10 минут
-        generate_crypto_prices()
-        save_crypto_prices()
-
-# Замените код в функции crypto_prices_cmd() следующим кодом:
-@bot.command(name='crypto_prices')
-async def crypto_prices_cmd(ctx):
-    prices_str = '\n'.join([f"{CRYPTO_LIST[currency]['emoji']} {currency.capitalize()}: {CRYPTO_LIST[currency]['price']} USD" for currency in CRYPTO_LIST])
-    await ctx.send(f"Текущие курсы криптовалют:\n{prices_str}")
-
-def get_token():
-    token_directory = os.path.dirname(os.path.abspath(__file__))
-    token_file_path = os.path.join(token_directory, "TOKEN.txt")
-    if os.path.exists(token_file_path):
-        try:
-            with open(token_file_path, "r") as file:
-                token = file.read().strip()
-                if token:
-                    return token
-                else:
-                    logger.error("Токен не найден в файле TOKEN.txt")
-                    return None
-        except Exception as e:
-            logger.error(f"Ошибка при чтении токена из файла: {e}")
-            return None
-    else:
-        logger.error("Файл TOKEN.txt не найден")
-        return None
-
 # Команда для добавления администратора
 @bot.command(name='add_admin')
 @commands.has_permissions(administrator=True)
@@ -270,6 +225,26 @@ async def rem_admin(ctx, member: discord.Member):
     else:
         await ctx.send("На сервере нет администраторов.")
 
+# Команда для просмотра текущих курсов криптовалют
+@bot.command(name='crypto_prices')
+async def crypto_prices_cmd(ctx):
+    prices_str = '\n'.join([f"{CRYPTO_LIST[currency]['emoji']} {currency.capitalize()}: {CRYPTO_LIST[currency]['price']} USD" for currency in CRYPTO_LIST])
+    await ctx.send(f"Текущие курсы криптовалют:\n{prices_str}")
+
+def generate_crypto_prices():
+    for currency in CRYPTO_LIST:
+        change_percent = random.uniform(-1, 1)  # Изменение на случайный процент от -1% до 1%
+        if random.random() < 0.05:  # Шанс 5% на редкое изменение
+            change_percent *= random.uniform(0.8, 1.2)  # Редкое изменение от -20% до 20%
+        CRYPTO_LIST[currency]['price'] *= (1 + change_percent / 100)  # Применяем изменение
+
+# Замените функцию crypto_prices_generator() следующим кодом:
+async def crypto_prices_generator():
+    while True:
+        await asyncio.sleep(600)  # Пауза в 10 минут
+        generate_crypto_prices()
+        save_crypto_prices()
+
 # Функция для сохранения текущих курсов криптовалют
 def save_crypto_prices():
     with open("crypto_prices.json", "w") as file:
@@ -282,14 +257,13 @@ def load_crypto_prices():
             return json.load(file)
     else:
         return CRYPTO_LIST
-
 # Команда для обмена криптовалюты по текущему курсу
 # Синтаксис команды: /exchange [валюта_от] [валюта_в] [количество]
 # Пример использования: /exchange bitcoin bananacoin 10
 @bot.command(name='exchange')
 async def exchange_cmd(ctx, currency_from: str = None, currency_to: str = None, amount: int = None):
     if currency_from is None or currency_to is None or amount is None:
-        await ctx.send("Пожалуйста, укажите все необходимые аргументы: из_валюты, в_валюту, кол-во.")
+        await ctx.send("Пожалуйста, укажите все необходимые аргументы: 'из валюты', 'в валюту', 'количество'.")
         return
     
     await exchange_crypto(ctx, currency_from.lower(), currency_to.lower(), amount)
@@ -312,20 +286,34 @@ async def exchange_crypto(ctx, currency_from, currency_to, amount):
                 await ctx.send("У вас недостаточно указанной криптовалюты.")
         else:
             await ctx.send("Нельзя обменять криптовалюту на ту же самую.")
+
+def get_token():
+    token_directory = os.path.dirname(os.path.abspath(__file__))
+    token_file_path = os.path.join(token_directory, "TOKEN.txt")
+    if os.path.exists(token_file_path):
+        try:
+            with open(token_file_path, "r") as file:
+                token = file.read().strip()
+                if token:
+                    return token
+                else:
+                    logger.error("Токен не найден в файле TOKEN.txt")
+                    return None
+        except Exception as e:
+            logger.error(f"Ошибка при чтении токена из файла: {e}")
+            return None
     else:
-        await ctx.send("Указанной криптовалюты нет в списке доступных.")
+        logger.error("Файл TOKEN.txt не найден")
+        return None
 
 def main():
-    server_id = "no_id_now"
-    file_checker("test.txt", server_id)
+    server_id = "EXAMPLE_SERVER_ID"
+    file_checker(server_id)
+    load_crypto_prices()
     bot.last_work_time = {}
     bot.last_steal_time = {}
-    bot.loop.create_task(crypto_prices_generator())  # Создание задачи генерации курсов криптовалют
-    token = get_token()
-    if token is not None:
-        bot.run(token)
-    else:
-        logger.error("Не удалось получить токен. Бот выключается...")
+    bot.loop.create_task(crypto_prices_generator())
+    bot.run(get_token())
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
