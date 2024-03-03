@@ -257,6 +257,7 @@ def load_crypto_prices():
             return json.load(file)
     else:
         return CRYPTO_LIST
+    
 # Команда для обмена криптовалюты по текущему курсу
 # Синтаксис команды: /exchange [валюта_от] [валюта_в] [количество]
 # Пример использования: /exchange bitcoin bananacoin 10
