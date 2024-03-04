@@ -125,14 +125,17 @@ async def balance_cmd(ctx):
     server_id = str(ctx.guild.id)
     user_data = load_user_data(server_id, user_id)
     balance = user_data.get("balance", 0)
-    crypto_wallet = user_data.get("crypto_wallet", {})
+    crypto_wallet = {key: value for key, value in user_data.items() if key in CRYPTO_LIST}
     
     balance_str = f'**Баланс:** {balance} :coin:\n\n'
     
     crypto_str = ""
-    for currency in CRYPTO_LIST:
+    for currency, data in CRYPTO_LIST.items():
         amount = crypto_wallet.get(currency, 0)
-        crypto_str += f'{CRYPTO_LIST[currency]["emoji"]} {currency.capitalize()}: {amount}\n'
+        crypto_str += f'{data["emoji"]} {currency.capitalize()}: {amount}\n'
+    
+    if not crypto_str:
+        crypto_str = "У вас нет криптовалют."
     
     await ctx.send(f'{ctx.author.mention}, ваш текущий баланс:\n\n{balance_str}{crypto_str}')
 
@@ -170,18 +173,14 @@ async def steal_cmd(ctx):
         user_data["balance"] = user_balance
         save_user_data(server_id, user_id, user_data)
         await ctx.send(f'{ctx.author.mention}, попытка украсть провалилась! Вы потеряли {lost_amount} монет.')
-
-@bot.event
-async def on_error(event, *args, **kwargs):
-    logger.error(f"Произошла ошибка в событии {event}", exc_info=True)
     
 @bot.command(name='ping')
 async def ping(ctx):
     start_time = time.time()
-    message = await ctx.send("Играю в пинг-понг :video_game:")
+    message = await ctx.send("Пингую... :ping_pong:")
     end_time = time.time()
     ping_time = round((end_time - start_time) * 1000)
-    await message.edit(content=f"Время пинга: {ping_time} мс")
+    await message.edit(content=f"Ваш пинг: {ping_time} мс")
 
 # Команда для добавления администратора
 @bot.command(name='add_admin')
@@ -228,7 +227,7 @@ async def rem_admin(ctx, member: discord.Member):
 # Команда для просмотра текущих курсов криптовалют
 @bot.command(name='crypto_prices')
 async def crypto_prices_cmd(ctx):
-    prices_str = '\n'.join([f"{CRYPTO_LIST[currency]['emoji']} {currency.capitalize()}: {CRYPTO_LIST[currency]['price']} USD" for currency in CRYPTO_LIST])
+    prices_str = '\n'.join([f"{CRYPTO_LIST[currency]['emoji']} {currency.capitalize()}: {CRYPTO_LIST[currency]['price']} :coin:" for currency in CRYPTO_LIST])
     await ctx.send(f"Текущие курсы криптовалют:\n{prices_str}")
 
 def generate_crypto_prices():
@@ -237,6 +236,7 @@ def generate_crypto_prices():
         if random.random() < 0.05:  # Шанс 5% на редкое изменение
             change_percent *= random.uniform(0.8, 1.2)  # Редкое изменение от -20% до 20%
         CRYPTO_LIST[currency]['price'] *= (1 + change_percent / 100)  # Применяем изменение
+        print("Изменились цены криптовалют!")
 
 # Замените функцию crypto_prices_generator() следующим кодом:
 async def crypto_prices_generator():
@@ -287,6 +287,150 @@ async def exchange_crypto(ctx, currency_from, currency_to, amount):
                 await ctx.send("У вас недостаточно указанной криптовалюты.")
         else:
             await ctx.send("Нельзя обменять криптовалюту на ту же самую.")
+
+@admin_command
+@bot.command()
+async def give_money(ctx, member: discord.Member, amount: int):
+    """Выдача денег пользователю"""
+    # Проверка наличия всех аргументов
+    if not member or amount is None:
+        await ctx.send("Пожалуйста, используйте команду в формате: /give_money @пользователь количество")
+        return
+
+    # Загрузка данных пользователя
+    user_id = str(ctx.author.id)
+    server_id = str(ctx.guild.id)
+    user_data = load_user_data(server_id, user_id)
+
+    # Добавление денег пользователю
+    user_data['balance'] = user_data.get('balance', 0) + amount
+
+    # Отправка сообщения о выдаче денег
+    await ctx.send(f'Пользователь {member.mention} (ID: {member.id}) получил {amount} денег.')
+
+    # Сохранение данных пользователя после выдачи денег
+    save_user_data(server_id, user_id, user_data)
+
+@admin_command
+@bot.command()
+async def take_money(ctx, member: discord.Member, amount: int):
+    """Отнимание денег у пользователя"""
+    # Проверка наличия всех аргументов
+    if not member or amount is None:
+        await ctx.send("Пожалуйста, используйте команду в формате: /take_money @пользователь количество")
+        return
+
+    # Загрузка данных пользователя
+    user_id = str(member.id)
+    server_id = str(ctx.guild.id)
+    user_data = load_user_data(server_id, user_id)
+
+    # Проверка достаточности денег у пользователя
+    if user_data.get('balance', 0) < amount:
+        await ctx.send(f'У пользователя {member.mention} (ID: {member.id}) недостаточно денег.')
+        return           
+
+    # Отнимание денег у пользователя
+    user_data['balance'] -= amount
+
+    # Отправка сообщения об отнятии денег
+    await ctx.send(f'У пользователя {member.mention} (ID: {member.id}) отняли {amount} денег.')
+
+    # Сохранение данных пользователя после отнятия денег
+    save_user_data(server_id, user_id, user_data)
+
+@admin_command
+@bot.command()
+async def give_crypto(ctx, currency: str, member: discord.Member, amount: int):
+    """Выдача криптовалюты пользователю"""
+    # Проверка наличия всех аргументов
+    if not currency or not member or amount is None:
+        await ctx.send("Пожалуйста, используйте команду в формате: /give_crypto криптовалюта @пользователь количество")
+        return
+
+    # Проверка наличия указанной криптовалюты в списке
+    if currency.lower() not in CRYPTO_LIST:
+        await ctx.send(f'Криптовалюта {currency} не найдена в списке доступных криптовалют.')
+        return
+
+    # Загрузка данных пользователя
+    user_id = str(ctx.author.id)
+    server_id = str(ctx.guild.id)
+    user_data = load_user_data(server_id, user_id)
+
+    # Добавление указанной криптовалюты пользователю
+    user_data[currency.lower()] = user_data.get(currency.lower(), 0) + amount
+
+    # Отправка сообщения о выдаче криптовалюты
+    await ctx.send(f'Пользователь {member.mention} (ID: {member.id}) получил {amount} {currency}.')
+
+    # Сохранение данных пользователя после выдачи криптовалюты
+    save_user_data(server_id, user_id, user_data)
+
+@admin_command
+@bot.command()
+async def take_crypto(ctx, currency: str, member: discord.Member, amount: int):
+    """Отнимание криптовалюты у пользователя"""
+    # Проверка наличия всех аргументов
+    if not currency or not member or amount is None:
+        await ctx.send("Пожалуйста, используйте команду в формате: /take_crypto криптовалюта @пользователь количество")
+        return
+
+    # Проверка наличия указанной криптовалюты в списке
+    if currency.lower() not in CRYPTO_LIST:
+        await ctx.send(f'Криптовалюта {currency} не найдена в списке доступных криптовалют.')
+        return
+
+    # Загрузка данных пользователя
+    user_id = str(member.id)
+    server_id = str(ctx.guild.id)
+    user_data = load_user_data(server_id, user_id)
+
+    # Проверка достаточности указанной криптовалюты у пользователя
+    if user_data.get(currency.lower(), 0) < amount:
+        await ctx.send(f'У пользователя {member.mention} (ID: {member.id}) недостаточно {currency}.')
+        return
+
+    # Отнимание указанной криптовалюты у пользователя
+    user_data[currency.lower()] -= amount
+
+    # Отправка сообщения об отнятии криптовалюты
+    await ctx.send(f'У пользователя {member.mention} (ID: {member.id}) отняли {amount} {currency}.')
+
+    # Сохранение данных пользователя после отнятия криптовалюты
+    save_user_data(server_id, user_id, user_data)
+
+# Удаляем предустановленную команду help
+bot.remove_command("help")
+
+@bot.command()
+async def help(ctx):
+    message = (
+        ":bulb: Префикс ВСЕХ команд бота: /\n"
+        ":rosette: /start - Высвечивает стартовое сообщение\n"
+        ":rosette: /SideJob - Команда для быстрого, но маленького заработка\n"
+        ":rosette: /steal - Команда для еще более быстрого но более рискового заработка\n"
+        ":rosette: /balance - Позволяет просмотреть ваш баланс\n"
+        ":rosette: /crypto_prices - Просмотреть текущую стоимость криптовалют (Да, да, она меняется)\n"
+        ":rosette: /exchange - Обменять одну валюту в другую, кстати это отличный способ заработка на разнице валют\n"
+        ":rosette: /ping - Проверить время ответа бота, в основном для администраторов, но и обычным людям тоже доступна\n"
+        ":rosette: /admin_help - Тот же самый /help, но для администраторов\n"
+    )
+    await ctx.send(message)
+
+@bot.command()
+async def admin_help(ctx):
+    message = (
+        ":bulb: Префикс для ВСЕХ команд бота: /\n"
+        ":bulb: Эти команды ТОЛЬКО для администрации, обычным людям они не нужны\n"
+        ":rosette: /give_money - Выдаёт монеты, без аргументов ничего не делает, синтаксис: /give_money @(пинг) (кол-во монет)\n"
+        ":rosette: /take_money - Забирает монет, без аргументов ничего не делает, синтаксис: /take_money @(пинг) (кол-во монет)\n"
+        ":rosette: /give_crypto - Выдаёт криптовалюты, без аргументов ничего не делает, синтаксис: /give_crypto (валюта) @(пинг) (кол-во)\n"
+        ":rosette: /take_crypto - Забирает криптовалюты, без аргументов ничего не делает, синтаксис: /take_crypto (валюта) @(пинг) (кол-во)\n"
+        ":rosette: /add_admin - Добавляет нового администратора\n"
+        ":rosette: /rem_admin - Удаляет администратора\n"
+    )
+    await ctx.send(message)
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
