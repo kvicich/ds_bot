@@ -422,6 +422,10 @@ async def change_crypto_prices(ctx):
     generate_crypto_prices()
     await ctx.send("Вы принудительно изменили цены криптовалют!")
 
+@bot.command
+async def promo(ctx):
+    await ctx.send("В разработке")
+
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
     token_file_path = os.path.join(token_directory, "TOKEN.txt")
