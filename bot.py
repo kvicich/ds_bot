@@ -422,9 +422,56 @@ async def change_crypto_prices(ctx):
     generate_crypto_prices()
     await ctx.send("Вы принудительно изменили цены криптовалют!")
 
-@bot.command
-async def promo(ctx):
-    await ctx.send("В разработке")
+def load_promo_codes():
+    with open('promocodes.txt', 'r') as file:
+        codes = {}
+        for line in file:
+            promo, action = line.strip().split(' - ')
+            codes[promo] = action
+    return codes
+
+@bot.command()
+async def promo(ctx, code=None):
+    if code is None:
+        await ctx.send("Пожалуйста, введите промокод.")
+        return
+
+    server_id = str(ctx.guild.id)
+    user_id = str(ctx.author.id)
+    user_data = load_user_data(server_id, user_id)
+
+    promo_codes = load_promo_codes()
+    if code in promo_codes:
+        action = promo_codes[code]
+        key, value = action.split(' =+ ')
+        if 'used_promocode' in user_data:
+            await ctx.send("Промокод уже использован.")
+        else:
+            if key == 'money':
+                # Добавить деньги пользователю
+                user_data['money'] = int(value)
+                await ctx.send(f"Вы получили {value} денег.")
+            elif key == 'bitcoin':
+                # Добавить биткоины пользователю
+                user_data['bitcoin'] = int(value)
+                await ctx.send(f"Вы получили {value} биткоинов.")
+            elif key == 'ethereum':
+                # Добавить эфиры пользователю
+                user_data['ethereum'] = int(value)
+                await ctx.send(f"Вы получили {value} эфиров.")
+            elif key == 'bananacoin':
+                # Добавить бананакоины пользователю
+                user_data['bananacoin'] = int(value)
+                await ctx.send(f"Вы получили {value} бананакоинов.")
+            else:
+                await ctx.send("Произошла ошибка при обработке промокода.")
+
+            user_data['used_promocode'] = code
+
+    else:
+        await ctx.send("Промокод не найден.")
+
+    save_user_data(server_id, user_id, user_data)
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
