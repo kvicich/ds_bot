@@ -21,13 +21,11 @@ CRYPTO_LIST = {
 }
 
 logger = logging.getLogger('discord_bot')
-intents = discord.Intents.default()
-intents.messages = True
 
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
-bot = commands.Bot(command_prefix='/', intents=intents)
+bot = commands.Bot()
 
 # Проверяем наличие папки сервера и создаём ее, если она отсутствует
 def ensure_server_data_dir(server_id):
@@ -174,20 +172,21 @@ async def steal_cmd(ctx):
         save_user_data(server_id, user_id, user_data)
         await ctx.send(f'{ctx.author.mention}, попытка украсть провалилась! Вы потеряли {lost_amount} монет.')
     
-@bot.command(name='ping')
-async def ping(ctx):
+# Команда для проверки пинга
+@bot.slash.command(name='ping', description="Проверяет задержку бота.")
+async def ping(inter):
     start_time = time.time()
-    message = await ctx.send("Пингую... :ping_pong:")
+    message = await inter.response.send_message("Пингую... :ping_pong:")
     end_time = time.time()
     ping_time = round((end_time - start_time) * 1000)
     await message.edit(content=f"Ваш пинг: {ping_time} мс")
 
 # Команда для добавления администратора
-@bot.command(name='add_admin')
+@bot.slash.command(name='add_admin', description="Добавляет администратора на сервере.")
 @commands.has_permissions(administrator=True)
-async def add_admin(ctx, member: discord.Member):
-    admin_data_path = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id), "admins.json")
-    admin_dir = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id))
+async def add_admin(ctx, member: disnake.Member):
+    admin_data_path = os.path.join("SERVERS_DATA_DIR", str(ctx.guild.id), "admins.json")
+    admin_dir = os.path.join("SERVERS_DATA_DIR", str(ctx.guild.id))
 
     if not os.path.exists(admin_dir):
         os.makedirs(admin_dir)
@@ -206,10 +205,10 @@ async def add_admin(ctx, member: discord.Member):
     await ctx.send(f"{member.mention} добавлен в список администраторов.")
 
 # Команда для удаления администратора
-@bot.command(name='rem_admin')
+@bot.slash.command(name='rem_admin', description="Удаляет администратора с сервера.")
 @commands.has_permissions(administrator=True)
-async def rem_admin(ctx, member: discord.Member):
-    admin_data_path = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id), "admins.json")
+async def rem_admin(ctx, member: disnake.Member):
+    admin_data_path = os.path.join("SERVERS_DATA_DIR", str(ctx.guild.id), "admins.json")
 
     if os.path.exists(admin_data_path):
         with open(admin_data_path, "r") as file:
