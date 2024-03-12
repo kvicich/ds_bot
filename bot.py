@@ -26,7 +26,7 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
 
 # Создаем объект бота
 intents = disnake.Intents.default()
-bot = commands.Bot(command_prefix='!l!', intents=intents)
+bot = commands.Bot(command_prefix='!l!', sync_commands_debug=True, intents=intents)
 
 # Проверяем наличие папки сервера и создаём ее, если она отсутствует
 def ensure_server_data_dir(server_id):
@@ -81,9 +81,10 @@ def admin_command(command):
             await ctx.send("У вас нет прав для выполнения этой команды.")
     return wrapper
 
+# Событие выполняющееся после полного запуска бота
 @bot.event
 async def on_ready():
-    print(f"Бот запущен, его имя {bot.user.name}")
+    print(f"Бот запущен, его имя {bot.user}")
 
 # Стартовая команда
 @bot.slash_command(name='start', description="Стартовая команда.")
@@ -411,7 +412,8 @@ async def help(ctx):
 @bot.slash_command(name="admin_help", description='Посмотреть описание всех админ команд.')
 async def admin_help(ctx):
     message = (
-        ":bulb: Префикс для ВСЕХ команд бота: /\n"
+        ":bulb: Префикс всех основных команд бота: /\n"
+        ":bulb: Префикс для ВСЕХ легаси команд бота: !l!\n"
         ":bulb: Эти команды ТОЛЬКО для администрации, обычным людям они не нужны\n"
         ":rosette: /give_money - Выдаёт монеты, без аргументов ничего не делает, синтаксис: /give_money @(пинг) (кол-во монет)\n"
         ":rosette: /take_money - Забирает монет, без аргументов ничего не делает, синтаксис: /take_money @(пинг) (кол-во монет)\n"
@@ -448,33 +450,39 @@ async def promo(ctx, code=None):
     user_id = str(ctx.author.id)
     user_data = load_user_data(server_id, user_id)
 
+    used_promocodes = user_data.get('used_promocodes', [])  # Получаем список использованных промокодов пользователя
+
+    if code in used_promocodes:
+        await ctx.send("Промокод уже использован.")
+        return
+
     promo_codes = load_promo_codes()
     if code in promo_codes:
         action = promo_codes[code]
         key, value = action.split(' =+ ')
-        if 'used_promocode' in user_data:
-            await ctx.send("Промокод уже использован.")
-        else:
-            if key == 'money':
-                # Добавить деньги пользователю
-                user_data['money'] = int(value)
-                await ctx.send(f"Вы получили {value} денег.")
-            elif key == 'bitcoin':
-                # Добавить биткоины пользователю
-                user_data['bitcoin'] = int(value)
-                await ctx.send(f"Вы получили {value} биткоинов.")
-            elif key == 'ethereum':
-                # Добавить эфиры пользователю
-                user_data['ethereum'] = int(value)
-                await ctx.send(f"Вы получили {value} эфиров.")
-            elif key == 'bananacoin':
-                # Добавить бананакоины пользователю
-                user_data['bananacoin'] = int(value)
-                await ctx.send(f"Вы получили {value} бананакоинов.")
-            else:
-                await ctx.send("Произошла ошибка при обработке промокода.")
 
-            user_data['used_promocode'] = code
+        if key == 'money':
+            # Добавить деньги пользователю
+            user_data['money'] = user_data.get('money', 0) + int(value)
+            await ctx.send(f"Вы получили {value} денег.")
+        elif key == 'bitcoin':
+            # Добавить биткоины пользователю
+            user_data['bitcoin'] = user_data.get('bitcoin', 0) + int(value)
+            await ctx.send(f"Вы получили {value} биткоинов.")
+        elif key == 'ethereum':
+            # Добавить эфиры пользователю
+            user_data['ethereum'] = user_data.get('ethereum', 0) + int(value)
+            await ctx.send(f"Вы получили {value} эфиров.")
+        elif key == 'bananacoin':
+            # Добавить бананакоины пользователю
+            user_data['bananacoin'] = user_data.get('bananacoin', 0) + int(value)
+            await ctx.send(f"Вы получили {value} бананакоинов.")
+        else:
+            await ctx.send("Произошла ошибка при обработке промокода.")
+
+        # Добавляем промокод в список использованных для данного пользователя
+        used_promocodes.append(code)
+        user_data['used_promocodes'] = used_promocodes
 
     else:
         await ctx.send("Промокод не найден.")
