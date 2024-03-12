@@ -1,7 +1,7 @@
 import os
 import json
-import discord
-from discord.ext import commands
+import disnake
+from disnake.ext import commands
 import logging
 import random
 import time
@@ -21,13 +21,12 @@ CRYPTO_LIST = {
 }
 
 logger = logging.getLogger('discord_bot')
-intents = discord.Intents.default()
-intents.messages = True
-
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
-bot = commands.Bot(command_prefix='/', intents=intents)
+# Создаем объект бота
+intents = disnake.Intents.default()
+bot = commands.Bot(command_prefix='!l!', intents=intents)
 
 # Проверяем наличие папки сервера и создаём ее, если она отсутствует
 def ensure_server_data_dir(server_id):
@@ -86,23 +85,25 @@ def admin_command(command):
 async def on_ready():
     print(f"Бот запущен, его имя {bot.user.name}")
 
-@bot.command(name='start')
-async def start_cmd(ctx):
-    user_name = ctx.author.name
-    guild_name = ctx.guild.name
-    await ctx.send(f'Приветствую, это на данный момент тестовая команда. Все команды: /help Имя бота: {bot.user.name}. Твой юзернейм: {user_name}. Имя сервера: {guild_name}. Тестовое эмодзи: :fly: ')
+# Стартовая команда
+@bot.slash_command(name='start', description="Стартовая команда.")
+async def start_cmd(inter):
+    user_name = inter.user.name
+    guild_name = inter.guild.name
+    await inter.response.send_message(f'Приветствую, это на данный момент тестовая команда. Все команды: /help Имя бота: {bot.user.name}. Твой юзернейм: {user_name}. Имя сервера: {guild_name}. Тестовое эмодзи: :fly: ')
 
-@bot.command(name='SideJob')
-async def SideJob_cmd(ctx):
-    user_id = str(ctx.author.id)
-    server_id = str(ctx.guild.id)
+# Команда для подработки
+@bot.slash_command(name='sidejob', description="Работка.")
+async def SideJob_cmd(inter):
+    user_id = str(inter.user.id)
+    server_id = str(inter.guild_id)
     current_time = time.time()
     last_work_time = bot.last_work_time.get(server_id, {})
     if user_id in last_work_time:
         time_elapsed = current_time - last_work_time[user_id]
         if time_elapsed < WORK_COOLDOWN:
             time_left = WORK_COOLDOWN - time_elapsed
-            await ctx.send(f'{ctx.author.mention}, вы уже работали недавно. Подождите еще {int(time_left)} секунд.')
+            await inter.response.send_message(f'{inter.author.mention}, вы уже работали недавно. Подождите еще {int(time_left)} секунд.')
             return
     last_work_time[user_id] = current_time
     bot.last_work_time[server_id] = last_work_time
@@ -116,13 +117,13 @@ async def SideJob_cmd(ctx):
     user_data["money"] = user_balance
     save_user_data(server_id, user_id, user_data)
     work_message = work_message.replace("{currency_earned}", str(currency_earned))
-    await ctx.send(f'{ctx.author.mention}, {work_message}.')
+    await inter.response.send_message(f'{inter.author.mention}, {work_message}.')
 
 # Команда для просмотра текущего баланса и криптовалют
-@bot.command(name='balance')
-async def balance_cmd(ctx):
-    user_id = str(ctx.author.id)
-    server_id = str(ctx.guild.id)
+@bot.slash_command(name='balance', description="Просмотреть баланс")
+async def balance_cmd(inter):
+    user_id = str(inter.user.id)
+    server_id = str(inter.guild_id)
     user_data = load_user_data(server_id, user_id)
     balance = user_data.get("money", 0)
     crypto_wallet = {key: value for key, value in user_data.items() if key in CRYPTO_LIST}
@@ -137,19 +138,20 @@ async def balance_cmd(ctx):
     if not crypto_str:
         crypto_str = "У вас нет криптовалют."
     
-    await ctx.send(f'{ctx.author.mention}, ваш текущий баланс:\n\n{balance_str}{crypto_str}')
+    await inter.response.send_message(f'Ваш текущий баланс:\n\n{balance_str}{crypto_str}')
 
-@bot.command(name='steal')
-async def steal_cmd(ctx):
-    user_id = str(ctx.author.id)
-    server_id = str(ctx.guild.id)
+# Команда для попытки кражи
+@bot.slash_command(name='steal', description="Попытка украсть что-то.")
+async def steal_cmd(inter):
+    user_id = str(inter.user.id)
+    server_id = str(inter.guild_id)
     current_time = time.time()
     last_steal_time = bot.last_steal_time.get(server_id, {})
     if user_id in last_steal_time:
         time_elapsed = current_time - last_steal_time[user_id]
         if time_elapsed < STEAL_COOLDOWN:
             time_left = STEAL_COOLDOWN - time_elapsed
-            await ctx.send(f'{ctx.author.mention}, вы недавно уже пытались что-то украсть. Подождите еще {int(time_left)} секунд.')
+            await inter.response.send_message(f'Вы недавно уже пытались что-то украсть. Подождите еще {int(time_left)} секунд.')
             return
     last_steal_time[user_id] = current_time
     bot.last_steal_time[server_id] = last_steal_time
@@ -164,30 +166,32 @@ async def steal_cmd(ctx):
         user_data["money"] = user_balance
         save_user_data(server_id, user_id, user_data)
         steal_message = steal_message.replace("{stolen_amount}", str(stolen_amount))
-        await ctx.send(f'{ctx.author.mention}, {steal_message}')
+        await inter.response.send_message(f'{inter.author.mention}, {steal_message}')
     else:
         lost_amount = random.randint(FAILED_STEAL_MIN_LOSS, FAILED_STEAL_MAX_LOSS)
         user_data = load_user_data(server_id, user_id)
         user_balance = user_data.get("money", 0)
-        user_balance = max(0, user_balance - lost_amount)  
-        user_data["money"] = user_balance
-        save_user_data(server_id, user_id, user_data)
-        await ctx.send(f'{ctx.author.mention}, попытка украсть провалилась! Вы потеряли {lost_amount} монет.')
+        user_data["money"] =- lost_amount
+        save_user_data(user_id, server_id, user_data)
     
-@bot.command(name='ping')
-async def ping(ctx):
+
+@bot.slash_command(name='ping', description="Проверяет ваш пинг.")
+async def ping(inter):
     start_time = time.time()
-    message = await ctx.send("Пингую... :ping_pong:")
+    # Делаем фиктивный запрос, чтобы измерить задержку
+    await inter.response.defer()
     end_time = time.time()
     ping_time = round((end_time - start_time) * 1000)
-    await message.edit(content=f"Ваш пинг: {ping_time} мс")
+    await inter.edit_original_message(content=f"Понг!\n"
+                                      f"Ваш пинг: {ping_time} мс"
+    )
 
 # Команда для добавления администратора
-@bot.command(name='add_admin')
+@bot.slash_command(name='add_admin', description="Добавляет администратора на сервере.")
 @commands.has_permissions(administrator=True)
-async def add_admin(ctx, member: discord.Member):
-    admin_data_path = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id), "admins.json")
-    admin_dir = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id))
+async def add_admin(ctx, member: disnake.Member):
+    admin_data_path = os.path.join("SERVERS_DATA_DIR", str(ctx.guild.id), "admins.json")
+    admin_dir = os.path.join("SERVERS_DATA_DIR", str(ctx.guild.id))
 
     if not os.path.exists(admin_dir):
         os.makedirs(admin_dir)
@@ -206,10 +210,11 @@ async def add_admin(ctx, member: discord.Member):
     await ctx.send(f"{member.mention} добавлен в список администраторов.")
 
 # Команда для удаления администратора
-@bot.command(name='rem_admin')
+@bot.slash_command(name='rem_admin', description="Удаляет администратора с сервера.")
 @commands.has_permissions(administrator=True)
-async def rem_admin(ctx, member: discord.Member):
-    admin_data_path = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id), "admins.json")
+@admin_command
+async def rem_admin(ctx, member: disnake.Member):
+    admin_data_path = os.path.join("SERVERS_DATA_DIR", str(ctx.guild.id), "admins.json")
 
     if os.path.exists(admin_data_path):
         with open(admin_data_path, "r") as file:
@@ -225,7 +230,7 @@ async def rem_admin(ctx, member: discord.Member):
         await ctx.send("На сервере нет администраторов.")
 
 # Команда для просмотра текущих курсов криптовалют
-@bot.command(name='crypto_prices')
+@bot.slash_command(name='crypto_prices', description='Просмотреть текущие курсы криптовалют.')
 async def crypto_prices_cmd(ctx):
     prices_str = '\n'.join([f"{CRYPTO_LIST[currency]['emoji']} {currency.capitalize()}: {CRYPTO_LIST[currency]['price']} :coin:" for currency in CRYPTO_LIST])
     await ctx.send(f"Текущие курсы криптовалют:\n{prices_str}")
@@ -275,120 +280,123 @@ def load_crypto_prices():
         print("Загружены курсы криптовалют!")
         return CRYPTO_LIST
 
+# Команда для выдачи денег
 @admin_command
-@bot.command()
-async def give_money(ctx, member: discord.Member, amount: int):
+@bot.slash_command(name='give_money', description="Выдает деньги пользователю.")
+async def give_money(inter, member: disnake.Member, amount: int):
     # Проверка наличия всех аргументов
     if not member or amount is None:
-        await ctx.send("Пожалуйста, используйте команду в формате: /give_money @пользователь количество")
+        await inter.response.send_message("Пожалуйста, используйте команду в формате: /give_money @пользователь количество")
         return
 
     # Загрузка данных пользователя
-    user_id = str(ctx.author.id)
-    server_id = str(ctx.guild.id)
+    user_id = str(inter.author.id)
+    server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
 
     # Добавление денег пользователю
     user_data['money'] = user_data.get('money', 0) + amount
 
     # Отправка сообщения о выдаче денег
-    await ctx.send(f'Пользователь {member.mention} (ID: {member.id}) получил {amount} денег.')
+    await inter.response.send_message(f'Пользователь {member.mention} (ID: {member.id}) получил {amount} денег.')
 
     # Сохранение данных пользователя после выдачи денег
     save_user_data(server_id, user_id, user_data)
 
+# Команда для отнятия денег
 @admin_command
-@bot.command()
-async def take_money(ctx, member: discord.Member, amount: int):
+@bot.slash_command(name='take_money', description="Отнимает деньги у пользователя.")
+async def take_money(inter, member: disnake.Member, amount: int):
     # Проверка наличия всех аргументов
     if not member or amount is None:
-        await ctx.send("Пожалуйста, используйте команду в формате: /take_money @пользователь количество")
+        await inter.response.send_message("Пожалуйста, используйте команду в формате: /take_money @пользователь количество")
         return
 
     # Загрузка данных пользователя
     user_id = str(member.id)
-    server_id = str(ctx.guild.id)
+    server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
 
     # Проверка достаточности денег у пользователя
     if user_data.get('money', 0) < amount:
-        await ctx.send(f'У пользователя {member.mention} (ID: {member.id}) недостаточно денег.')
+        await inter.response.send_message(f'У пользователя {member.mention} (ID: {member.id}) недостаточно денег.')
         return           
 
     # Отнимание денег у пользователя
     user_data['money'] -= amount
 
     # Отправка сообщения об отнятии денег
-    await ctx.send(f'У пользователя {member.mention} (ID: {member.id}) отняли {amount} денег.')
+    await inter.response.send_message(f'У пользователя {member.mention} (ID: {member.id}) отняли {amount} денег.')
 
     # Сохранение данных пользователя после отнятия денег
     save_user_data(server_id, user_id, user_data)
 
+# Команда для выдачи криптовалюты
 @admin_command
-@bot.command()
-async def give_crypto(ctx, currency: str, member: discord.Member, amount: int):
+@bot.slash_command(name='give_crypto', description="Выдает криптовалюту пользователю.")
+async def give_crypto(inter, currency: str, member: disnake.Member, amount: int):
     # Проверка наличия всех аргументов
     if not currency or not member or amount is None:
-        await ctx.send("Пожалуйста, используйте команду в формате: /give_crypto криптовалюта @пользователь количество")
+        await inter.response.send_message("Пожалуйста, используйте команду в формате: /give_crypto криптовалюта @пользователь количество")
         return
 
     # Проверка наличия указанной криптовалюты в списке
     if currency.lower() not in CRYPTO_LIST:
-        await ctx.send(f'Криптовалюта {currency} не найдена в списке доступных криптовалют.')
+        await inter.response.send_message(f'Криптовалюта {currency} не найдена в списке доступных криптовалют.')
         return
 
     # Загрузка данных пользователя
-    user_id = str(ctx.author.id)
-    server_id = str(ctx.guild.id)
+    user_id = str(inter.author.id)
+    server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
 
     # Добавление указанной криптовалюты пользователю
     user_data[currency.lower()] = user_data.get(currency.lower(), 0) + amount
 
     # Отправка сообщения о выдаче криптовалюты
-    await ctx.send(f'Пользователь {member.mention} (ID: {member.id}) получил {amount} {currency}.')
+    await inter.response.send_message(f'Пользователь {member.mention} (ID: {member.id}) получил {amount} {currency}.')
 
     # Сохранение данных пользователя после выдачи криптовалюты
     save_user_data(server_id, user_id, user_data)
 
+# Команда для отнятия криптовалюты
 @admin_command
-@bot.command()
-async def take_crypto(ctx, currency: str, member: discord.Member, amount: int):
+@bot.slash_command(name='take_crypto', description="Отнимает криптовалюту у пользователя.")
+async def take_crypto(inter, currency: str, member: disnake.Member, amount: int):
     # Проверка наличия всех аргументов
     if not currency or not member or amount is None:
-        await ctx.send("Пожалуйста, используйте команду в формате: /take_crypto криптовалюта @пользователь количество")
+        await inter.response.send_message("Пожалуйста, используйте команду в формате: /take_crypto криптовалюта @пользователь количество")
         return
 
     # Проверка наличия указанной криптовалюты в списке
     if currency.lower() not in CRYPTO_LIST:
-        await ctx.send(f'Криптовалюта {currency} не найдена в списке доступных криптовалют.')
+        await inter.response.send_message(f'Криптовалюта {currency} не найдена в списке доступных криптовалют.')
         return
 
     # Загрузка данных пользователя
     user_id = str(member.id)
-    server_id = str(ctx.guild.id)
+    server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
 
     # Проверка достаточности указанной криптовалюты у пользователя
     if user_data.get(currency.lower(), 0) < amount:
-        await ctx.send(f'У пользователя {member.mention} (ID: {member.id}) недостаточно {currency}.')
+        await inter.response.send_message(f'У пользователя {member.mention} (ID: {member.id}) недостаточно {currency}.')
         return
 
     # Отнимание указанной криптовалюты у пользователя
     user_data[currency.lower()] -= amount
 
     # Отправка сообщения об отнятии криптовалюты
-    await ctx.send(f'У пользователя {member.mention} (ID: {member.id}) отняли {amount} {currency}.')
+    await inter.response.send_message(f'У пользователя {member.mention} (ID: {member.id}) отняли {amount} {currency}.')
 
     # Сохранение данных пользователя после отнятия криптовалюты
     save_user_data(server_id, user_id, user_data)
 
-# Удаляем предустановленную команду help
-bot.remove_command("help")
-@bot.command()
+@bot.slash_command(name="help", description='Посмотреть описание всех команд.')
 async def help(ctx):
     message = (
-        ":bulb: Префикс ВСЕХ команд бота: /\n"
+        ":bulb: Префикс всех основных команд бота: /\n"
+        ":bulb: Префикс ВСЕХ легаси команд бота: !l!\n"
         ":rosette: /start - Высвечивает стартовое сообщение\n"
         ":rosette: /SideJob - Команда для быстрого, но маленького заработка\n"
         ":rosette: /steal - Команда для еще более быстрого но более рискового заработка\n"
@@ -400,7 +408,7 @@ async def help(ctx):
     )
     await ctx.send(message)
 
-@bot.command()
+@bot.slash_command(name="admin_help", description='Посмотреть описание всех админ команд.')
 async def admin_help(ctx):
     message = (
         ":bulb: Префикс для ВСЕХ команд бота: /\n"
@@ -416,7 +424,7 @@ async def admin_help(ctx):
     await ctx.send(message)
 
 @admin_command
-@bot.command(name='change_crypto_prices')
+@bot.slash_command(name="сhange_crypto_prices", description='Сменить цены криптовалют.')
 async def change_crypto_prices(ctx):
     print("Кто-то принудительно изменил цены криптовалют!")
     generate_crypto_prices()
@@ -430,7 +438,7 @@ def load_promo_codes():
             codes[promo] = action
     return codes
 
-@bot.command()
+@bot.slash_command(name="promo", description='Позволяет ввести промокод.')
 async def promo(ctx, code=None):
     if code is None:
         await ctx.send("Пожалуйста, введите промокод.")
