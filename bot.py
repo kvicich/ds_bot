@@ -248,10 +248,10 @@ def generate_crypto_prices():
         CRYPTO_LIST[currency]['price'] = round(CRYPTO_LIST[currency]['price'])
     print("Изменились цены криптовалют!")
 
-# Цикл меняющий цены раз в 10 минут
+# Цикл меняющий цены раз в 5 минут
 async def crypto_prices_generator():
     while True:
-        await asyncio.sleep(600)  # Пауза в 10 минут
+        await asyncio.sleep(300)  # Пауза в 5 минут
         generate_crypto_prices()
         save_crypto_prices()
 
@@ -406,6 +406,7 @@ async def help(ctx):
         ":rosette: /ping - Проверить время ответа бота, в основном для администраторов, но и обычным людям тоже доступна\n"
         ":rosette: /admin_help - Тот же самый /help, но для администраторов\n"
         ":rosette: /promo - Команда для взаимодействия с промокодами\n"
+        ":rosette: /exchange - Позволяет обменять вашу валюту на другую\n"
     )
     await ctx.send(message)
 
@@ -426,7 +427,7 @@ async def admin_help(ctx):
     await ctx.send(message)
 
 @admin_command
-@bot.slash_command(name="сhange_crypto_prices", description='Сменить цены криптовалют.')
+@bot.slash_command(name="change_crypto_prices", description='Сменить цены криптовалют.')
 async def change_crypto_prices(ctx):
     print("Кто-то принудительно изменил цены криптовалют!")
     generate_crypto_prices()
@@ -488,6 +489,91 @@ async def promo(ctx, code=None):
         await ctx.send("Промокод не найден.")
 
     save_user_data(server_id, user_id, user_data)
+
+@bot.slash_command(name="exchange", description='Позволяет обменивать валюты')
+async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: float):
+    # Проверяем, что валюты из списка доступных
+    if source_currency.lower() not in CRYPTO_LIST and source_currency.lower() != "money":
+        await ctx.send(f"Валюта {source_currency} не найдена в списке доступных криптовалют и денег.")
+        return
+    if target_currency.lower() not in CRYPTO_LIST and target_currency.lower() != "money":
+        await ctx.send(f"Валюта {target_currency} не найдена в списке доступных криптовалют и денег.")
+        return
+
+    # Обрабатываем случай обмена денег на криптовалюту
+    if source_currency.lower() == "money":
+        # Проверяем, что пользователь имеет достаточно денег для обмена
+        user_id = str(ctx.author.id)
+        server_id = str(ctx.guild.id)
+        user_data = load_user_data(server_id, user_id)
+        if user_data.get("money", 0) < amount:
+            await ctx.send("У вас недостаточно денег для обмена.")
+            return
+
+        # Вычисляем сумму после обмена
+        target_rate = CRYPTO_LIST[target_currency.lower()]["price"]
+        exchanged_amount = amount / target_rate
+
+        # Выполняем обмен
+        user_data["money"] -= amount
+        user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_amount
+
+        # Сообщаем пользователю об успешном обмене
+        await ctx.send(f"Вы успешно обменяли {amount} денег на {exchanged_amount} {target_currency}.")
+
+        # Сохраняем данные пользователя после обмена
+        save_user_data(server_id, user_id, user_data)
+    
+    # Обрабатываем случай обмена криптовалюты на деньги
+    elif target_currency.lower() == "money":
+        # Проверяем, что пользователь имеет достаточно криптовалюты для обмена
+        user_id = str(ctx.author.id)
+        server_id = str(ctx.guild.id)
+        user_data = load_user_data(server_id, user_id)
+        if user_data.get(source_currency.lower(), 0) < amount:
+            await ctx.send(f"У вас недостаточно {source_currency} для обмена.")
+            return
+
+        # Вычисляем сумму после обмена
+        source_rate = CRYPTO_LIST[source_currency.lower()]["price"]
+        exchanged_amount = amount * source_rate
+
+        # Выполняем обмен
+        user_data["money"] = user_data.get("money", 0) + exchanged_amount
+        user_data[source_currency.lower()] -= amount
+
+        # Сообщаем пользователю об успешном обмене
+        await ctx.send(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_amount} денег.")
+
+        # Сохраняем данные пользователя после обмена
+        save_user_data(server_id, user_id, user_data)
+    
+    # Обрабатываем обмен криптовалюты на криптовалюту
+    else:
+        # Получаем текущие курсы валют из списка
+        source_rate = CRYPTO_LIST[source_currency.lower()]["price"]
+        target_rate = CRYPTO_LIST[target_currency.lower()]["price"]
+
+        # Проверяем, что пользователь имеет достаточно криптовалюты для обмена
+        user_id = str(ctx.author.id)
+        server_id = str(ctx.guild.id)
+        user_data = load_user_data(server_id, user_id)
+        if user_data.get(source_currency.lower(), 0) < amount:
+            await ctx.send(f"У вас недостаточно {source_currency} для обмена.")
+            return
+
+        # Вычисляем сумму после обмена
+        exchanged_amount = amount * (source_rate / target_rate)
+
+        # Выполняем обмен
+        user_data[source_currency.lower()] -= amount
+        user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_amount
+
+        # Сообщаем пользователю об успешном обмене
+        await ctx.send(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_amount} {target_currency}.")
+
+        # Сохраняем данные пользователя после обмена
+        save_user_data(server_id, user_id, user_data)
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
