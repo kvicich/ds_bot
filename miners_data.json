@@ -61,5 +61,16 @@
         "supported_cryptos": [
             "ethereum"
         ]
+    },
+    "Multi Miner 13": {
+        "price": 45000.0,
+        "hashrate": "350/s",
+        "electricity_consumption": "20/h",
+        "chance_of_failure": "1%",
+        "supported_cryptos": [
+            "bitcoin",
+            "ethereum"
+        ]
+
     }
 }
