@@ -62,8 +62,26 @@
             "ethereum"
         ]
     },
+    "Ultra GPU 4080": {
+        "price": 55000.0,
+        "hashrate": "450/s",
+        "electricity_consumption": "25/h",
+        "chance_of_failure": "1%",
+        "supported_cryptos": [
+            "ethereum"
+        ]
+    },
+    "Ultra GPU 4090": {
+        "price": 80000.0,
+        "hashrate": "500/s",
+        "electricity_consumption": "35/h",
+        "chance_of_failure": "3%",
+        "supported_cryptos": [
+            "ethereum"
+        ]
+    },
     "Multi Miner 13": {
-        "price": 45000.0,
+        "price": 65000.0,
         "hashrate": "350/s",
         "electricity_consumption": "20/h",
         "chance_of_failure": "1%",
@@ -71,6 +89,5 @@
             "bitcoin",
             "ethereum"
         ]
-
     }
 }
