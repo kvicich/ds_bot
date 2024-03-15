@@ -1,3 +1,4 @@
-0.13 - money =+ 1300 
+0.15 - bitcoin =+ 0.625
 start - money =+ 2000
 komaru - bananacoin =+ 250
+cocoa - ethereum - 1
