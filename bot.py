@@ -6,6 +6,7 @@ import logging
 import random
 import time
 import asyncio
+import re
 
 # Переменные
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
@@ -13,12 +14,8 @@ WORK_COOLDOWN = 1 # Время в секундах между попытками
 STEAL_COOLDOWN = 5  # Время в секундах между попытками кражи
 FAILED_STEAL_MIN_LOSS = 1 # Минимальная потеря монет в /steal
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
-# Начальные цены для криптовалют
-CRYPTO_LIST = {
-    'bitcoin': {'emoji': ':dvd:', 'price': 50000},
-    'ethereum': {'emoji': ':cd:', 'price': 10000},
-    'bananacoin': {'emoji': ':banana:', 'price': 250}
-}
+MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
+mining_tasks = {}
 
 logger = logging.getLogger('discord_bot')
 logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
@@ -81,6 +78,80 @@ def admin_command(command):
             await ctx.send("У вас нет прав для выполнения этой команды.")
     return wrapper
 
+# Декоратор для проверки, является ли пользователь администратором
+def isTester(ctx):
+    admin_data_path = os.path.join("Testers.json")
+    if os.path.exists(admin_data_path):
+        with open(admin_data_path, "r") as file:
+            admins = json.load(file)
+            return ctx.author.id in admins
+    return False
+
+# Декоратор для команд, доступных только администраторам
+def Tester_command(command):
+    async def wrapper(ctx, *args, **kwargs):
+        if isTester(ctx):
+            await command(ctx, *args, **kwargs)
+        else:
+            await ctx.send("У вас нет прав для выполнения этой команды.")
+    return wrapper
+
+# Декоратор для проверки, является ли пользователь администратором
+def isOwner(ctx):
+    admin_data_path = os.path.join("Owner.json")
+    if os.path.exists(admin_data_path):
+        with open(admin_data_path, "r") as file:
+            admins = json.load(file)
+            return ctx.author.id in admins
+    return False
+
+# Декоратор для команд, доступных только администраторам
+def owner_command(command):
+    async def wrapper(ctx, *args, **kwargs):
+        if isOwner(ctx):
+            await command(ctx, *args, **kwargs)
+        else:
+            await ctx.send("У вас нет прав для выполнения этой команды.")
+    return wrapper
+
+# Команда для добавления тестера
+@owner_command
+@bot.slash_command(name='add_tester', description="Добавляет тестера в бот.")
+async def add_tester(ctx, member: disnake.User):
+    admin_data_path = os.path.join("Testers.json")
+
+    if os.path.exists(admin_data_path):
+        with open(admin_data_path, "r") as file:
+            admins = json.load(file)
+    else:
+        admins = []
+
+    admins.append(member.id)
+
+    with open(admin_data_path, "w") as file:
+        json.dump(admins, file)
+
+    await ctx.send(f"{member.mention} добавлен в список тестеров.")
+
+# Команда для удаления тестера
+@owner_command
+@bot.slash_command(name='rem_tester', description="Удаляет тестера с бота.")
+async def rem_tester(ctx, member: disnake.User):
+    admin_data_path = os.path.join("Testers.json")
+
+    if os.path.exists(admin_data_path):
+        with open(admin_data_path, "r") as file:
+            admins = json.load(file)
+        if member.id in admins:
+            admins.remove(member.id)
+            with open(admin_data_path, "w") as file:
+                json.dump(admins, file)
+            await ctx.send(f"{member.mention} удален из списка тестеров.")
+        else:
+            await ctx.send(f"{member.mention} не является тестером.")
+    else:
+        await ctx.send("На сервере нет тестеров.")
+
 # Событие выполняющееся после полного запуска бота
 @bot.event
 async def on_ready():
@@ -120,27 +191,6 @@ async def SideJob_cmd(inter):
     work_message = work_message.replace("{currency_earned}", str(currency_earned))
     await inter.response.send_message(f'{inter.author.mention}, {work_message}.')
 
-# Команда для просмотра текущего баланса и криптовалют
-@bot.slash_command(name='balance', description="Просмотреть баланс")
-async def balance_cmd(inter):
-    user_id = str(inter.user.id)
-    server_id = str(inter.guild_id)
-    user_data = load_user_data(server_id, user_id)
-    balance = user_data.get("money", 0)
-    crypto_wallet = {key: value for key, value in user_data.items() if key in CRYPTO_LIST}
-    
-    balance_str = f'**Баланс:** {balance} :coin:\n\n'
-    
-    crypto_str = ""
-    for currency, data in CRYPTO_LIST.items():
-        amount = crypto_wallet.get(currency, 0)
-        crypto_str += f'{data["emoji"]} {currency.capitalize()}: {amount}\n'
-    
-    if not crypto_str:
-        crypto_str = "У вас нет криптовалют."
-    
-    await inter.response.send_message(f'Ваш текущий баланс:\n\n{balance_str}{crypto_str}')
-
 # Команда для попытки кражи
 @bot.slash_command(name='steal', description="Попытка украсть что-то.")
 async def steal_cmd(inter):
@@ -174,7 +224,6 @@ async def steal_cmd(inter):
         user_balance = user_data.get("money", 0)
         user_data["money"] =- lost_amount
         save_user_data(user_id, server_id, user_data)
-    
 
 @bot.slash_command(name='ping', description="Проверяет ваш пинг.")
 async def ping(inter):
@@ -191,8 +240,8 @@ async def ping(inter):
 @bot.slash_command(name='add_admin', description="Добавляет администратора на сервере.")
 @commands.has_permissions(administrator=True)
 async def add_admin(ctx, member: disnake.Member):
-    admin_data_path = os.path.join("SERVERS_DATA_DIR", str(ctx.guild.id), "admins.json")
-    admin_dir = os.path.join("SERVERS_DATA_DIR", str(ctx.guild.id))
+    admin_data_path = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id), "admins.json")
+    admin_dir = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id))
 
     if not os.path.exists(admin_dir):
         os.makedirs(admin_dir)
@@ -215,7 +264,7 @@ async def add_admin(ctx, member: disnake.Member):
 @commands.has_permissions(administrator=True)
 @admin_command
 async def rem_admin(ctx, member: disnake.Member):
-    admin_data_path = os.path.join("SERVERS_DATA_DIR", str(ctx.guild.id), "admins.json")
+    admin_data_path = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id), "admins.json")
 
     if os.path.exists(admin_data_path):
         with open(admin_data_path, "r") as file:
@@ -233,7 +282,8 @@ async def rem_admin(ctx, member: disnake.Member):
 # Команда для просмотра текущих курсов криптовалют
 @bot.slash_command(name='crypto_prices', description='Просмотреть текущие курсы криптовалют.')
 async def crypto_prices_cmd(ctx):
-    prices_str = '\n'.join([f"{CRYPTO_LIST[currency]['emoji']} {currency.capitalize()}: {CRYPTO_LIST[currency]['price']} :coin:" for currency in CRYPTO_LIST])
+    crypto_list = load_crypto_prices()
+    prices_str = '\n'.join([f"{crypto_list[currency]['emoji']} {currency.capitalize()}: {crypto_list[currency]['price']} :coin:" for currency in crypto_list])
     await ctx.send(f"Текущие курсы криптовалют:\n{prices_str}")
 
 # Функция для генерации новых цен криптовалют
@@ -269,26 +319,14 @@ def load_crypto_prices():
             return json.load(file)
     else:
         print("Загружены начальные курсы криптовалют! Проверьте файл crypto_prices.json!")
-        return CRYPTO_LIST
+        return {"bitcoin": {"emoji": ":dvd:", "price": 50000}, "ethereum": {"emoji": ":cd:", "price": 10000}, "bananacoin": {"emoji": ":banana:", "price": 250}}
 
-# Функция для загрузки текущих курсов криптовалют из файла
-def load_crypto_prices():
-    if os.path.exists("crypto_prices.json"):
-        with open("crypto_prices.json", "r") as file:
-            print("Загружены курсы криптовалют!")
-            return json.load(file)
-    else:
-        print("Загружены курсы криптовалют!")
-        return CRYPTO_LIST
+CRYPTO_LIST = load_crypto_prices()
 
 # Команда для выдачи денег
 @admin_command
 @bot.slash_command(name='give_money', description="Выдает деньги пользователю.")
 async def give_money(inter, member: disnake.Member, amount: int):
-    # Проверка наличия всех аргументов
-    if not member or amount is None:
-        await inter.response.send_message("Пожалуйста, используйте команду в формате: /give_money @пользователь количество")
-        return
 
     # Загрузка данных пользователя
     user_id = str(inter.author.id)
@@ -308,10 +346,6 @@ async def give_money(inter, member: disnake.Member, amount: int):
 @admin_command
 @bot.slash_command(name='take_money', description="Отнимает деньги у пользователя.")
 async def take_money(inter, member: disnake.Member, amount: int):
-    # Проверка наличия всех аргументов
-    if not member or amount is None:
-        await inter.response.send_message("Пожалуйста, используйте команду в формате: /take_money @пользователь количество")
-        return
 
     # Загрузка данных пользователя
     user_id = str(member.id)
@@ -336,10 +370,6 @@ async def take_money(inter, member: disnake.Member, amount: int):
 @admin_command
 @bot.slash_command(name='give_crypto', description="Выдает криптовалюту пользователю.")
 async def give_crypto(inter, currency: str, member: disnake.Member, amount: int):
-    # Проверка наличия всех аргументов
-    if not currency or not member or amount is None:
-        await inter.response.send_message("Пожалуйста, используйте команду в формате: /give_crypto криптовалюта @пользователь количество")
-        return
 
     # Проверка наличия указанной криптовалюты в списке
     if currency.lower() not in CRYPTO_LIST:
@@ -364,10 +394,6 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
 @admin_command
 @bot.slash_command(name='take_crypto', description="Отнимает криптовалюту у пользователя.")
 async def take_crypto(inter, currency: str, member: disnake.Member, amount: int):
-    # Проверка наличия всех аргументов
-    if not currency or not member or amount is None:
-        await inter.response.send_message("Пожалуйста, используйте команду в формате: /take_crypto криптовалюта @пользователь количество")
-        return
 
     # Проверка наличия указанной криптовалюты в списке
     if currency.lower() not in CRYPTO_LIST:
@@ -574,6 +600,143 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
 
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
+
+# Слеш-команда для покупки майнера
+@bot.slash_command(name='buy_miner', description="Покупка майнера")
+async def buy_miner_cmd(inter, miner: str):
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
+    miners_data = load_miners_data()
+    user_data = load_user_data(server_id, user_id)
+    
+    if miner in miners_data:
+        miner_info = miners_data[miner]
+        if miner_info["price"] <= user_data.get("money", 0):
+            user_data["money"] -= miner_info["price"]
+            if "miners" not in user_data:
+                user_data["miners"] = {}
+            user_data["miners"][miner] = user_data["miners"].get(miner, 0) + 1
+            save_user_data(server_id, user_id, user_data)
+            await inter.response.send_message(f"Майнер {miner} успешно куплен!")
+        else:
+            await inter.response.send_message("У вас недостаточно средств для покупки этого майнера.")
+    else:
+        await inter.response.send_message("Данный майнер не существует.\n"
+                                           "Используйте /miners_info для просмотра списка майнеров")
+
+# Слеш-команда для просмотра информации о пользователе
+@bot.slash_command(name='user_info', description="Просмотр информации о пользователе и его майнерах")
+async def user_info_cmd(inter, user: disnake.User = None):
+    user_id = str(user.id) if user else str(inter.user.id)
+    server_id = str(inter.guild_id)
+    
+    user_data = load_user_data(server_id, user_id)
+    balance = user_data.get("money", 0)
+    crypto_wallet = {key: value for key, value in user_data.items() if key in CRYPTO_LIST}
+    
+    balance_str = f'**Баланс:** {balance} :coin:\n\n'
+    
+    crypto_str = ""
+    for currency, data in CRYPTO_LIST.items():
+        amount = crypto_wallet.get(currency, 0)
+        crypto_str += f'{data["emoji"]} {currency.capitalize()}: {amount}\n'
+    
+    if not crypto_str:
+        crypto_str = "У вас нет криптовалют."
+    
+    miners_info = ""
+    if "miners" in user_data:
+        miners_info = "Майнеры:\n"
+        for miner, count in user_data["miners"].items():
+            miners_info += f"{miner} x{count}\n"
+    
+    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}{crypto_str}\n{miners_info}')
+
+# Загружаем данные майнеров
+def load_miners_data():
+    with open(MINERS_DATA_PATH, "r") as f:
+        return json.load(f)
+
+# Функция для получения информации о майнерах
+def get_miners_info(miners_data):
+    return "\n".join([f"{miner}: Цена - {miners_data[miner]['price']} :coin:, Хэшрейт - {miners_data[miner]['hashrate']}, Потребление - {miners_data[miner]['electricity_consumption']} в час, Вероятность отказа - {miners_data[miner]['chance_of_failure']}, Поддерживаемые криптовалюты - {', '.join(miners_data[miner]['supported_cryptos'])}" for miner in miners_data])
+
+# Слеш-команда для просмотра информации о майнерах
+@bot.slash_command(name='miners_info', description="Просмотр информации о доступных майнерах")
+async def miners_info_cmd(inter):
+    miners_data = load_miners_data()
+    miners_info = "Доступные майнеры:\n" + get_miners_info(miners_data)
+    await inter.response.send_message(miners_info)
+
+# Команда для запуска майнинга
+@bot.slash_command(name='start_mining', description="Запуск майнинга")
+async def start_mining_cmd(inter, selected_crypto: str = None):
+    server_id = str(inter.guild_id)
+    user_id = str(inter.user.id)
+    
+    # Проверяем, есть ли уже запущенный майнинг для данного пользователя
+    if (server_id, user_id) in mining_tasks:
+        await inter.response.send_message("Майнинг уже запущен.")
+        return
+    
+    if selected_crypto and selected_crypto.lower() not in CRYPTO_LIST:
+        await inter.response.send_message("Выбранная криптовалюта не поддерживается.")
+        return
+    
+    mining_tasks[(server_id, user_id)] = asyncio.create_task(mine_coins(server_id, user_id, selected_crypto))
+    await inter.response.send_message("Майнинг успешно запущен!")
+
+async def mine_coins(server_id, user_id, selected_crypto=None):
+    while True:
+        user_data = load_user_data(server_id, user_id)
+        if "miners" in user_data:
+            for miner_name, miner_count in user_data["miners"].items():
+                miner_info = load_miners_data()[miner_name]
+                hashrate_match = re.search(r'\d+', miner_info["hashrate"])  # Находим все числа в строке
+                consumption_match = re.search(r'\d+', miner_info["electricity_consumption"])  # Находим все числа в строке
+                if hashrate_match and consumption_match:
+                    hashrate = miner_count * float(hashrate_match.group())  # Преобразуем к числовому типу
+                    consumption = miner_count * float(consumption_match.group())  # Преобразуем к числовому типу
+                else:
+                    print(f"Invalid hashrate or consumption format for miner {miner_name}")
+                    continue
+                
+                supported_cryptos = miner_info["supported_cryptos"]
+                if selected_crypto:
+                    if selected_crypto in supported_cryptos:
+                        supported_cryptos = [selected_crypto]
+                    else:
+                        continue
+                
+                for crypto in supported_cryptos:
+                    coins_mined = 0
+                    if crypto == "bitcoin":
+                        coins_mined = int(hashrate / 6)  # Деление хешрейта на 6 для Bitcoin
+                    elif crypto == "ethereum":
+                        coins_mined = int(hashrate / 4.5)  # Деление хешрейта на 4.5 для Ethereum
+                    elif crypto == "bananacoin":
+                        coins_mined = int(hashrate / 15)  # Деление хешрейта на 15 для Bananacoin
+                    
+                    user_data[crypto] = user_data.get(crypto, 0) + coins_mined
+                    user_data["money"] -= consumption
+                    
+            save_user_data(server_id, user_id, user_data)
+        await asyncio.sleep(300)  # Пауза в 5 минут между итерациями майнинга
+
+# Команда для остановки майнинга
+@bot.slash_command(name='stop_mining', description="Остановка майнинга")
+async def stop_mining_cmd(inter):
+    server_id = str(inter.guild_id)
+    user_id = str(inter.user.id)
+    
+    # Проверяем, существует ли задача майнинга для пользователя
+    if (server_id, user_id) in mining_tasks:
+        # Получаем задачу майнинга и отменяем её выполнение
+        mining_task = mining_tasks[(server_id, user_id)]
+        mining_task.cancel()
+        del mining_tasks[(server_id, user_id)]  # Удаляем задачу из словаря
+        await inter.response.send_message("Майнинг успешно остановлен!")
+    else:
+        await inter.response.send_message("Майнинг не запущен.")
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
