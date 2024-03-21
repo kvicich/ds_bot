@@ -1,7 +1,16 @@
 {
+    "Ant Miner S18KPro": {
+        "price": 13400,
+        "hashrate": "98/s",
+        "electricity_consumption": "8$/h",
+        "chance_of_failure": "1%/10min",
+        "supported_cryptos": [
+            "bitcoin"
+        ]
+    },
     "Ant Miner S19KPro": {
         "price": 15800,
-        "hashrate": "98/s",
+        "hashrate": "115/s",
         "electricity_consumption": "12$/h",
         "chance_of_failure": "2%/10min",
         "supported_cryptos": [
@@ -10,7 +19,7 @@
     },
     "Ant Miner S20KPro": {
         "price": 23460,
-        "hashrate": "120/s",
+        "hashrate": "130/s",
         "electricity_consumption": "16$/h",
         "chance_of_failure": "1%/10min",
         "supported_cryptos": [
@@ -33,6 +42,33 @@
         "chance_of_failure": "4%/10min",
         "supported_cryptos": [
             "bananacoin"
+        ]
+    },
+    "Avalon 1050": {
+        "price": 8500,
+        "hashrate": "800/s",
+        "electricity_consumption": "40$/h",
+        "chance_of_failure": "3%/10min",
+        "supported_cryptos": [
+            "bananacoin"
+        ]
+    },
+    "Avalon 1050 Pro": {
+        "price": 10000,
+        "hashrate": "10000/s",
+        "electricity_consumption": "50$/h",
+        "chance_of_failure": "7%/10min",
+        "supported_cryptos": [
+            "bananacoin"
+        ]
+    },
+    "GPU 1060": {
+        "price": 12500,
+        "hashrate": "80/s",
+        "electricity_consumption": "9$/h",
+        "chance_of_failure": "1%/10min",
+        "supported_cryptos": [
+            "ethereum"
         ]
     },
     "Ultra GPU 3060": {
@@ -77,16 +113,6 @@
         "electricity_consumption": "35/h",
         "chance_of_failure": "3%/10min",
         "supported_cryptos": [
-            "ethereum"
-        ]
-    },
-    "Multi Miner 13": {
-        "price": 65000.0,
-        "hashrate": "350/s",
-        "electricity_consumption": "20/h",
-        "chance_of_failure": "1%/10min",
-        "supported_cryptos": [
-            "bitcoin",
             "ethereum"
         ]
     }
