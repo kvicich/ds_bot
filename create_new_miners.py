@@ -7,7 +7,6 @@ def input_new_miner():
     hashrate = input("Хешрейт (в формате 'число/единица времени', например, '98/s'): ")
     price = float(input("Цена: "))
     electricity_consumption = input("Потребление электроэнергии (в формате 'число/единица времени', например, '12$/h'): ")
-    chance_of_failure = input("Шанс поломки (в формате 'число%', например, '2%'): ")
     supported_cryptos = input("Поддерживаемые криптовалюты (через запятую, без пробелов): ").split(',')
     
     # Создание нового майнера в формате словаря
@@ -15,7 +14,6 @@ def input_new_miner():
         "price": price,
         "hashrate": hashrate,
         "electricity_consumption": electricity_consumption,
-        "chance_of_failure": chance_of_failure,
         "supported_cryptos": [crypto.strip() for crypto in supported_cryptos]
     }
     
