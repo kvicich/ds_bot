@@ -9,9 +9,9 @@ import asyncio
 
 # Переменные
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
-WORK_COOLDOWN = 1 # Время в секундах между попытками зароботка
-STEAL_COOLDOWN = 5  # Время в секундах между попытками кражи
-FAILED_STEAL_MIN_LOSS = 1 # Минимальная потеря монет в /steal
+WORK_COOLDOWN = 300 # Время в секундах между попытками зароботка
+STEAL_COOLDOWN = 600  # Время в секундах между попытками кражи
+FAILED_STEAL_MIN_LOSS = 15 # Минимальная потеря монет в /steal
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
 MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
 mining_tasks = {}
@@ -701,31 +701,30 @@ async def start_mining_cmd(inter, selected_crypto: str = None):
 
 async def mine_coins(server_id, user_id, selected_crypto=None):
     while True:
+        await asyncio.sleep(300)
         user_data = load_user_data(server_id, user_id)
         if "miners" in user_data:
             for miner_name, miner_count in user_data["miners"].items():
                 miner_info = load_miners_data()[miner_name]
-                if selected_crypto and selected_crypto not in miner_info["supported_cryptos"]:
+                if selected_crypto not in miner_info["supported_cryptos"]:
                     continue
 
                 hashrate = float(miner_info["hashrate"].split()[0]) * miner_count
                 consumption = float(miner_info["electricity_consumption"].split()[0]) * miner_count
 
-                for crypto in miner_info["supported_cryptos"]:
-                    coins_mined = 0
-                    if crypto == "bitcoin":
-                        coins_mined = int(hashrate / 5000)
-                    elif crypto == "ethereum":
-                        coins_mined = int(hashrate / 20000)
-                    elif crypto == "bananacoin":
-                        coins_mined = int(hashrate / 150)
+                coins_mined = 0
+                if selected_crypto == "bitcoin":
+                    coins_mined = hashrate / 5000
+                elif selected_crypto == "ethereum":
+                    coins_mined = hashrate / 20000
+                elif selected_crypto == "bananacoin":
+                    coins_mined = hashrate / 150
 
-                    user_data[crypto] = user_data.get(crypto, 0) + coins_mined
-
+                user_data[selected_crypto] = user_data.get(selected_crypto, 0) + coins_mined
                 user_data["money"] -= consumption
                 save_user_data(server_id, user_id, user_data)
-
-        await asyncio.sleep(300)
+        else: 
+            print("У пользователя отсутствуют майнеры, цикл продолжается")
 
 @bot.slash_command(name='stop_mining', description="Остановка майнинга")
 async def stop_mining_cmd(inter):
