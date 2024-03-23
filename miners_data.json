@@ -1,117 +1,104 @@
 {
     "Ant Miner S18KPro": {
         "price": 13400,
-        "hashrate": "98/s",
-        "electricity_consumption": "8$/h",
-        "chance_of_failure": "1%/10min",
+        "hashrate": "98",
+        "electricity_consumption": "8",
         "supported_cryptos": [
             "bitcoin"
         ]
     },
     "Ant Miner S19KPro": {
         "price": 15800,
-        "hashrate": "115/s",
-        "electricity_consumption": "12$/h",
-        "chance_of_failure": "2%/10min",
+        "hashrate": "115",
+        "electricity_consumption": "12",
         "supported_cryptos": [
             "bitcoin"
         ]
     },
     "Ant Miner S20KPro": {
         "price": 23460,
-        "hashrate": "130/s",
-        "electricity_consumption": "16$/h",
-        "chance_of_failure": "1%/10min",
+        "hashrate": "130",
+        "electricity_consumption": "16",
         "supported_cryptos": [
             "bitcoin"
         ]
     },
     "Avalon 954": {
         "price": 6300,
-        "hashrate": "640/s",
-        "electricity_consumption": "35$/h",
-        "chance_of_failure": "5%/10min",
+        "hashrate": "640",
+        "electricity_consumption": "35",
         "supported_cryptos": [
             "bananacoin"
         ]
     },
     "Avalon 1045": {
         "price": 7400,
-        "hashrate": "735/s",
-        "electricity_consumption": "35$/h",
-        "chance_of_failure": "4%/10min",
+        "hashrate": "735",
+        "electricity_consumption": "35",
         "supported_cryptos": [
             "bananacoin"
         ]
     },
     "Avalon 1050": {
         "price": 8500,
-        "hashrate": "800/s",
-        "electricity_consumption": "40$/h",
-        "chance_of_failure": "3%/10min",
+        "hashrate": "800",
+        "electricity_consumption": "40",
         "supported_cryptos": [
             "bananacoin"
         ]
     },
     "Avalon 1050 Pro": {
         "price": 10000,
-        "hashrate": "10000/s",
-        "electricity_consumption": "50$/h",
-        "chance_of_failure": "7%/10min",
+        "hashrate": "1000",
+        "electricity_consumption": "50",
         "supported_cryptos": [
             "bananacoin"
         ]
     },
     "GPU 1060": {
         "price": 12500,
-        "hashrate": "80/s",
-        "electricity_consumption": "9$/h",
-        "chance_of_failure": "1%/10min",
+        "hashrate": "80",
+        "electricity_consumption": "9",
         "supported_cryptos": [
             "ethereum"
         ]
     },
     "Ultra GPU 3060": {
         "price": 38000,
-        "hashrate": "240/s",
-        "electricity_consumption": "20$/h",
-        "chance_of_failure": "6%/10min",
+        "hashrate": "240",
+        "electricity_consumption": "20",
         "supported_cryptos": [
             "ethereum"
         ]
     },
     "Ultra GPU 4060": {
         "price": 42000,
-        "hashrate": "315/s",
-        "electricity_consumption": "18$/h",
-        "chance_of_failure": "2%/10min",
+        "hashrate": "315",
+        "electricity_consumption": "18",
         "supported_cryptos": [
             "ethereum"
         ]
     },
     "Ultra GPU 4070": {
         "price": 45000.0,
-        "hashrate": "350/s",
-        "electricity_consumption": "20/h",
-        "chance_of_failure": "1%/10min",
+        "hashrate": "350",
+        "electricity_consumption": "20",
         "supported_cryptos": [
             "ethereum"
         ]
     },
     "Ultra GPU 4080": {
         "price": 55000.0,
-        "hashrate": "450/s",
-        "electricity_consumption": "25/h",
-        "chance_of_failure": "1%/10min",
+        "hashrate": "450",
+        "electricity_consumption": "25",
         "supported_cryptos": [
             "ethereum"
         ]
     },
     "Ultra GPU 4090": {
         "price": 80000.0,
-        "hashrate": "500/s",
-        "electricity_consumption": "35/h",
-        "chance_of_failure": "3%/10min",
+        "hashrate": "500",
+        "electricity_consumption": "35",
         "supported_cryptos": [
             "ethereum"
         ]
