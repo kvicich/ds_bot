@@ -6,7 +6,6 @@ import logging
 import random
 import time
 import asyncio
-import re
 
 # Переменные
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
@@ -667,19 +666,34 @@ async def miners_info_cmd(inter):
     miners_info = "Доступные майнеры:\n" + get_miners_info(miners_data)
     await inter.response.send_message(miners_info)
 
-# Команда для запуска майнинга
 @bot.slash_command(name='start_mining', description="Запуск майнинга")
 async def start_mining_cmd(inter, selected_crypto: str = None):
     server_id = str(inter.guild_id)
     user_id = str(inter.user.id)
-    
-    # Проверяем, есть ли уже запущенный майнинг для данного пользователя
+    user_data = load_user_data(server_id, user_id)
+
     if (server_id, user_id) in mining_tasks:
         await inter.response.send_message("Майнинг уже запущен.")
         return
     
+    if selected_crypto is None and "miners" in user_data:
+        supported_cryptos = set()
+        for miner_name, miner_count in user_data["miners"].items():
+            miner_info = load_miners_data()[miner_name]
+            supported_cryptos.update(miner_info["supported_cryptos"])
+        
+        if len(supported_cryptos) > 1:
+            await inter.response.send_message("Пожалуйста, выберите криптовалюту для майнинга: " + ', '.join(supported_cryptos))
+            return
+        elif len(supported_cryptos) == 1:
+            selected_crypto = supported_cryptos.pop()
+
     if selected_crypto and selected_crypto.lower() not in CRYPTO_LIST:
         await inter.response.send_message("Выбранная криптовалюта не поддерживается.")
+        return
+    
+    if "money" not in user_data or user_data["money"] < 0:
+        await inter.response.send_message("Недостаточно средств для запуска майнинга.")
         return
     
     mining_tasks[(server_id, user_id)] = asyncio.create_task(mine_coins(server_id, user_id, selected_crypto))
@@ -691,49 +705,37 @@ async def mine_coins(server_id, user_id, selected_crypto=None):
         if "miners" in user_data:
             for miner_name, miner_count in user_data["miners"].items():
                 miner_info = load_miners_data()[miner_name]
-                hashrate_match = re.search(r'\d+', miner_info["hashrate"])  # Находим все числа в строке
-                consumption_match = re.search(r'\d+', miner_info["electricity_consumption"])  # Находим все числа в строке
-                if hashrate_match and consumption_match:
-                    hashrate = miner_count * float(hashrate_match.group())  # Преобразуем к числовому типу
-                    consumption = miner_count * float(consumption_match.group())  # Преобразуем к числовому типу
-                else:
-                    print(f"Invalid hashrate or consumption format for miner {miner_name}")
+                if selected_crypto and selected_crypto not in miner_info["supported_cryptos"]:
                     continue
-                
-                supported_cryptos = miner_info["supported_cryptos"]
-                if selected_crypto:
-                    if selected_crypto in supported_cryptos:
-                        supported_cryptos = [selected_crypto]
-                    else:
-                        continue
-                
-                for crypto in supported_cryptos:
+
+                hashrate = float(miner_info["hashrate"].split()[0]) * miner_count
+                consumption = float(miner_info["electricity_consumption"].split()[0]) * miner_count
+
+                for crypto in miner_info["supported_cryptos"]:
                     coins_mined = 0
                     if crypto == "bitcoin":
-                        coins_mined = int(hashrate / 6)  # Деление хешрейта на 6 для Bitcoin
+                        coins_mined = int(hashrate / 5000)
                     elif crypto == "ethereum":
-                        coins_mined = int(hashrate / 4.5)  # Деление хешрейта на 4.5 для Ethereum
+                        coins_mined = int(hashrate / 20000)
                     elif crypto == "bananacoin":
-                        coins_mined = int(hashrate / 15)  # Деление хешрейта на 15 для Bananacoin
-                    
-                    user_data[crypto] = user_data.get(crypto, 0) + coins_mined
-                    user_data["money"] -= consumption
-                    
-            save_user_data(server_id, user_id, user_data)
-        await asyncio.sleep(300)  # Пауза в 5 минут между итерациями майнинга
+                        coins_mined = int(hashrate / 150)
 
-# Команда для остановки майнинга
+                    user_data[crypto] = user_data.get(crypto, 0) + coins_mined
+
+                user_data["money"] -= consumption
+                save_user_data(server_id, user_id, user_data)
+
+        await asyncio.sleep(300)
+
 @bot.slash_command(name='stop_mining', description="Остановка майнинга")
 async def stop_mining_cmd(inter):
     server_id = str(inter.guild_id)
     user_id = str(inter.user.id)
     
-    # Проверяем, существует ли задача майнинга для пользователя
     if (server_id, user_id) in mining_tasks:
-        # Получаем задачу майнинга и отменяем её выполнение
         mining_task = mining_tasks[(server_id, user_id)]
         mining_task.cancel()
-        del mining_tasks[(server_id, user_id)]  # Удаляем задачу из словаря
+        del mining_tasks[(server_id, user_id)]
         await inter.response.send_message("Майнинг успешно остановлен!")
     else:
         await inter.response.send_message("Майнинг не запущен.")
