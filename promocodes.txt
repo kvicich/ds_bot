@@ -1,4 +1,8 @@
-0.15 - bitcoin =+ 0.625
+0.16 - bitcoin =+ 0.023
 start - money =+ 2000
 komaru - bananacoin =+ 250
-cocoa - ethereum - 1
+cocoa - ethereum =+ 1
+komugi - bitcoin =+ 0.03
+fix_me_please - money =+ 120
+discord - bananacoin =+ 13
+wumpus - ethereum =+ 0.05
