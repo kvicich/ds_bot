@@ -14,6 +14,7 @@ STEAL_COOLDOWN = 600  # Время в секундах между попытка
 FAILED_STEAL_MIN_LOSS = 15 # Минимальная потеря монет в /steal
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
 MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
+under_construction = "working.txt"
 mining_tasks = {}
 
 logger = logging.getLogger('discord_bot')
@@ -113,6 +114,13 @@ def owner_command(command):
             await ctx.send("У вас нет прав для выполнения этой команды.")
     return wrapper
 
+# Асинхронная функция для генерации случайного сообщения
+async def randy_random():
+    with open(under_construction, "r", encoding='utf-8') as file:
+        messages = file.readlines()
+        message = random.choice(messages).strip()
+        return message
+
 # Команда для добавления тестера
 @owner_command
 @bot.slash_command(name='add_tester', description="Добавляет тестера в бот.")
@@ -203,6 +211,7 @@ async def steal_cmd(inter):
             time_left = STEAL_COOLDOWN - time_elapsed
             await inter.response.send_message(f'Вы недавно уже пытались что-то украсть. Подождите еще {int(time_left)} секунд.')
             return
+    await inter.response.defer()  # Отправляем ответ о том, что команда получена и будет обработана
     last_steal_time[user_id] = current_time
     bot.last_steal_time[server_id] = last_steal_time
     if random.random() < 0.4567:  # Шанс 45,67%
@@ -216,14 +225,14 @@ async def steal_cmd(inter):
         user_data["money"] = user_balance
         save_user_data(server_id, user_id, user_data)
         steal_message = steal_message.replace("{stolen_amount}", str(stolen_amount))
-        await inter.response.send_message(f'{inter.author.mention}, {steal_message}')
+        await inter.edit_original_message(content=f'{inter.author.mention}, {steal_message}')
     else:
         lost_amount = random.randint(FAILED_STEAL_MIN_LOSS, FAILED_STEAL_MAX_LOSS)
         user_data = load_user_data(server_id, user_id)
         user_balance = user_data.get("money", 0)
-        user_data["money"] =- lost_amount
-        save_user_data(user_id, server_id, user_data)
-
+        user_balance -= lost_amount  
+        user_data["money"] = user_balance
+        save_user_data(server_id, user_id, user_data)
 @bot.slash_command(name='ping', description="Проверяет ваш пинг.")
 async def ping(inter):
     start_time = time.time()
@@ -467,16 +476,16 @@ def load_promo_codes():
     return codes
 
 @bot.slash_command(name="promo", description='Позволяет ввести промокод.')
-async def promo(ctx, code=None):
-    if code is None:
-        await ctx.send("Пожалуйста, введите промокод.")
-        return
-
+async def promo(ctx, code: str):
     server_id = str(ctx.guild.id)
     user_id = str(ctx.author.id)
     user_data = load_user_data(server_id, user_id)
 
-    used_promocodes = user_data.get('used_promocodes', [])  # Получаем список использованных промокодов пользователя
+    used_promocodes = user_data.get('used_promocodes', [])  
+
+    if code is None:
+        await ctx.send("Пожалуйста, введите промокод.")
+        return
 
     if code in used_promocodes:
         await ctx.send("Промокод уже использован.")
@@ -485,36 +494,28 @@ async def promo(ctx, code=None):
     promo_codes = load_promo_codes()
     if code in promo_codes:
         action = promo_codes[code]
-        key, value = action.split(' =+ ')
+        try:
+            value, key = action.split(' =+ ')
+        except ValueError:
+            await ctx.send("Неправильный формат действия промокода.")
+            return
 
         if key == 'money':
-            # Добавить деньги пользователю
-            user_data['money'] = user_data.get('money', 0) + int(value)
+            user_data['money'] = user_data.get('money', 0) + float(value)
             await ctx.send(f"Вы получили {value} денег.")
-        elif key == 'bitcoin':
-            # Добавить биткоины пользователю
-            user_data['bitcoin'] = user_data.get('bitcoin', 0) + int(value)
-            await ctx.send(f"Вы получили {value} биткоинов.")
-        elif key == 'ethereum':
-            # Добавить эфиры пользователю
-            user_data['ethereum'] = user_data.get('ethereum', 0) + int(value)
-            await ctx.send(f"Вы получили {value} эфиров.")
-        elif key == 'bananacoin':
-            # Добавить бананакоины пользователю
-            user_data['bananacoin'] = user_data.get('bananacoin', 0) + int(value)
-            await ctx.send(f"Вы получили {value} бананакоинов.")
+        elif key in ['bitcoin', 'ethereum', 'bananacoin']:
+            user_data[key] = user_data.get(key, 0) + float(value)
+            await ctx.send(f"Вы получили {value} {key}.")
         else:
             await ctx.send("Произошла ошибка при обработке промокода.")
 
-        # Добавляем промокод в список использованных для данного пользователя
         used_promocodes.append(code)
         user_data['used_promocodes'] = used_promocodes
-
     else:
         await ctx.send("Промокод не найден.")
 
     save_user_data(server_id, user_id, user_data)
-
+    
 @bot.slash_command(name="exchange", description='Позволяет обменивать валюты')
 async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: float):
     # Проверяем, что валюты из списка доступных
@@ -538,13 +539,14 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         # Вычисляем сумму после обмена
         target_rate = CRYPTO_LIST[target_currency.lower()]["price"]
         exchanged_amount = amount / target_rate
+        exchanged_rounded_amount = round(exchanged_amount, 6)
 
         # Выполняем обмен
         user_data["money"] -= amount
-        user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_amount
+        user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_rounded_amount
 
         # Сообщаем пользователю об успешном обмене
-        await ctx.send(f"Вы успешно обменяли {amount} денег на {exchanged_amount} {target_currency}.")
+        await ctx.send(f"Вы успешно обменяли {amount} денег на {exchanged_rounded_amount} {target_currency}.")
 
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
@@ -562,13 +564,14 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         # Вычисляем сумму после обмена
         source_rate = CRYPTO_LIST[source_currency.lower()]["price"]
         exchanged_amount = amount * source_rate
+        exchanged_rounded_amount = round(exchanged_amount, 5)
 
         # Выполняем обмен
-        user_data["money"] = user_data.get("money", 0) + exchanged_amount
+        user_data["money"] = user_data.get("money", 0) + exchanged_rounded_amount
         user_data[source_currency.lower()] -= amount
 
         # Сообщаем пользователю об успешном обмене
-        await ctx.send(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_amount} денег.")
+        await ctx.send(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} денег.")
 
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
@@ -589,13 +592,14 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
 
         # Вычисляем сумму после обмена
         exchanged_amount = amount * (source_rate / target_rate)
+        exchanged_rounded_amount = round(exchanged_amount, 5)
 
         # Выполняем обмен
         user_data[source_currency.lower()] -= amount
-        user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_amount
+        user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_rounded_amount
 
         # Сообщаем пользователю об успешном обмене
-        await ctx.send(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_amount} {target_currency}.")
+        await ctx.send(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} {target_currency}.")
 
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
@@ -738,6 +742,21 @@ async def stop_mining_cmd(inter):
         await inter.response.send_message("Майнинг успешно остановлен!")
     else:
         await inter.response.send_message("Майнинг не запущен.")
+
+@bot.slash_command(name='buy_business', description="Купить бизнес")
+async def buy_business(inter):
+    random_message = await randy_random()
+    await inter.response.send_message(random_message)
+
+@bot.slash_command(name='businnes_control', description="Управлять бизнесами")
+async def business_control(inter):
+    random_message = await randy_random()
+    await inter.response.send_message(random_message)
+
+@bot.slash_command(name='sell_business', description="Продать бизнес")
+async def sell_business(inter):
+    random_message = await randy_random()
+    await inter.response.send_message(random_message)
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
