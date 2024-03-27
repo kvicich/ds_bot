@@ -9,8 +9,8 @@ import asyncio
 
 # Переменные
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
-WORK_COOLDOWN = 300 # Время в секундах между попытками зароботка
-STEAL_COOLDOWN = 600  # Время в секундах между попытками кражи
+WORK_COOLDOWN = 250 # Время в секундах между попытками зароботка
+STEAL_COOLDOWN = 500  # Время в секундах между попытками кражи
 FAILED_STEAL_MIN_LOSS = 15 # Минимальная потеря монет в /steal
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
 MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
@@ -53,16 +53,12 @@ def save_user_data(server_id, user_id, data):
         json.dump(data, f)
         print("Была сохранена дата пользователей")
 
-# Проверка файлов перед запуском
-def file_checker(server_id):
-    ensure_server_data_dir(server_id)
-
 def user_data_path(server_id, user_id):
     return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
 
 # Декоратор для проверки, является ли пользователь администратором
 def isAdmin(ctx):
-    admin_data_path = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id), "admins.json")
+    admin_data_path = os.path.join("admins.json")
     if os.path.exists(admin_data_path):
         with open(admin_data_path, "r") as file:
             admins = json.load(file)
@@ -186,7 +182,7 @@ async def SideJob_cmd(inter):
             return
     last_work_time[user_id] = current_time
     bot.last_work_time[server_id] = last_work_time
-    currency_earned = random.randint(15, 135)
+    currency_earned = random.randint(20, 143)
     with open("work_message.txt", "r", encoding="utf-8") as file:
         messages = file.readlines()
         work_message = random.choice(messages).strip()
@@ -215,7 +211,7 @@ async def steal_cmd(inter):
     last_steal_time[user_id] = current_time
     bot.last_steal_time[server_id] = last_steal_time
     if random.random() < 0.4567:  # Шанс 45,67%
-        stolen_amount = random.randint(20, 265)
+        stolen_amount = random.randint(40, 334)
         with open("steal_message.txt", "r", encoding="utf-8") as file:
             messages = file.readlines()
             steal_message = random.choice(messages).strip()
@@ -233,6 +229,7 @@ async def steal_cmd(inter):
         user_balance -= lost_amount  
         user_data["money"] = user_balance
         save_user_data(server_id, user_id, user_data)
+        
 @bot.slash_command(name='ping', description="Проверяет ваш пинг.")
 async def ping(inter):
     start_time = time.time()
@@ -246,13 +243,9 @@ async def ping(inter):
 
 # Команда для добавления администратора
 @bot.slash_command(name='add_admin', description="Добавляет администратора на сервере.")
-@commands.has_permissions(administrator=True)
+@owner_command
 async def add_admin(ctx, member: disnake.Member):
-    admin_data_path = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id), "admins.json")
-    admin_dir = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id))
-
-    if not os.path.exists(admin_dir):
-        os.makedirs(admin_dir)
+    admin_data_path = os.path.join("admins.json")
 
     if os.path.exists(admin_data_path):
         with open(admin_data_path, "r") as file:
@@ -269,10 +262,9 @@ async def add_admin(ctx, member: disnake.Member):
 
 # Команда для удаления администратора
 @bot.slash_command(name='rem_admin', description="Удаляет администратора с сервера.")
-@commands.has_permissions(administrator=True)
-@admin_command
+@owner_command
 async def rem_admin(ctx, member: disnake.Member):
-    admin_data_path = os.path.join(SERVERS_DATA_DIR, str(ctx.guild.id), "admins.json")
+    admin_data_path = os.path.join("admins.json")
 
     if os.path.exists(admin_data_path):
         with open(admin_data_path, "r") as file:
@@ -296,14 +288,20 @@ async def crypto_prices_cmd(ctx):
 
 # Функция для генерации новых цен криптовалют
 def generate_crypto_prices():
-    for currency in CRYPTO_LIST:
-        change_percent = random.uniform(-1, 1)  # Изменение на случайный процент от -1% до 1%
+    crypto_list = load_crypto_prices()
+    for currency in crypto_list:
+        change1 = random.uniform(-1.9, -0.1)
+        change2 = random.uniform(0.1, 1.9)
+        change_percent = random.uniform(change1, change2)  # Изменение на случайный процент от -1% до 1%
         if random.random() < 0.05:  # Шанс 5% на редкое изменение
-            change_percent *= random.uniform(0.8, 1.2)  # Редкое изменение от -20% до 20%
-        CRYPTO_LIST[currency]['price'] *= (1 + change_percent / 100)  # Применяем изменение
-    # Округляем цены криптовалют до нуля знаков после запятой/точки
-    for currency in CRYPTO_LIST:
-        CRYPTO_LIST[currency]['price'] = round(CRYPTO_LIST[currency]['price'])
+            change1 = random.uniform(0.6, 0.9)
+            change2 = random.uniform(1.01, 1.3)
+            change_percent *= random.uniform(change1, change2)  # Редкое изменение от -20% до 20%
+        crypto_list[currency]['price'] *= (1 + change_percent / 100)  # Применяем изменение
+        # Округляем цены криптовалют до нуля знаков после запятой/точки
+        crypto_list[currency]['price'] = round(crypto_list[currency]['price'], 0)
+    with open("crypto_prices.json", "w") as file:
+        json.dump(crypto_list, file)
     print("Изменились цены криптовалют!")
 
 # Цикл меняющий цены раз в 5 минут
@@ -311,12 +309,11 @@ async def crypto_prices_generator():
     while True:
         await asyncio.sleep(300)  # Пауза в 5 минут
         generate_crypto_prices()
-        save_crypto_prices()
 
 # Функция для сохранения текущих курсов криптовалют
-def save_crypto_prices():
+def save_crypto_prices(crypto_list):
     with open("crypto_prices.json", "w") as file:
-        json.dump(CRYPTO_LIST, file)
+        json.dump(crypto_list, file)
         print("Сохранены курсы криптовалют!")
 
 # Функция для загрузки текущих курсов криптовалют из файла
@@ -330,6 +327,13 @@ def load_crypto_prices():
         return {"bitcoin": {"emoji": ":dvd:", "price": 50000}, "ethereum": {"emoji": ":cd:", "price": 10000}, "bananacoin": {"emoji": ":banana:", "price": 250}}
 
 CRYPTO_LIST = load_crypto_prices()
+
+@admin_command
+@bot.slash_command(name="change_crypto_prices", description='Сменить цены криптовалют.')
+async def change_crypto_prices(inter):
+    print("Кто-то принудительно изменил цены криптовалют!")
+    generate_crypto_prices()
+    await inter.response.send_message("Вы принудительно изменили цены криптовалют!")
 
 # Команда для выдачи денег
 @admin_command
@@ -427,46 +431,6 @@ async def take_crypto(inter, currency: str, member: disnake.Member, amount: int)
     # Сохранение данных пользователя после отнятия криптовалюты
     save_user_data(server_id, user_id, user_data)
 
-@bot.slash_command(name="help", description='Посмотреть описание всех команд.')
-async def help(ctx):
-    message = (
-        ":bulb: Префикс всех основных команд бота: /\n"
-        ":bulb: Префикс ВСЕХ легаси команд бота: !l!\n"
-        ":rosette: /start - Высвечивает стартовое сообщение\n"
-        ":rosette: /SideJob - Команда для быстрого, но маленького заработка\n"
-        ":rosette: /steal - Команда для еще более быстрого но более рискового заработка\n"
-        ":rosette: /balance - Позволяет просмотреть ваш баланс\n"
-        ":rosette: /crypto_prices - Просмотреть текущую стоимость криптовалют (Да, да, она меняется)\n"
-        ":rosette: /ping - Проверить время ответа бота, в основном для администраторов, но и обычным людям тоже доступна\n"
-        ":rosette: /admin_help - Тот же самый /help, но для администраторов\n"
-        ":rosette: /promo - Команда для взаимодействия с промокодами\n"
-        ":rosette: /exchange - Позволяет обменять вашу валюту на другую\n"
-    )
-    await ctx.send(message)
-
-@bot.slash_command(name="admin_help", description='Посмотреть описание всех админ команд.')
-async def admin_help(ctx):
-    message = (
-        ":bulb: Префикс всех основных команд бота: /\n"
-        ":bulb: Префикс для ВСЕХ легаси команд бота: !l!\n"
-        ":bulb: Эти команды ТОЛЬКО для администрации, обычным людям они не нужны\n"
-        ":rosette: /give_money - Выдаёт монеты, без аргументов ничего не делает, синтаксис: /give_money @(пинг) (кол-во монет)\n"
-        ":rosette: /take_money - Забирает монет, без аргументов ничего не делает, синтаксис: /take_money @(пинг) (кол-во монет)\n"
-        ":rosette: /give_crypto - Выдаёт криптовалюты, без аргументов ничего не делает, синтаксис: /give_crypto (валюта) @(пинг) (кол-во)\n"
-        ":rosette: /take_crypto - Забирает криптовалюты, без аргументов ничего не делает, синтаксис: /take_crypto (валюта) @(пинг) (кол-во)\n"
-        ":rosette: /add_admin - Добавляет нового администратора\n"
-        ":rosette: /rem_admin - Удаляет администратора\n"
-        ":rosette: /change_crypto_prices - Мгновенно меняет цены криптовалюты\n"
-    )
-    await ctx.send(message)
-
-@admin_command
-@bot.slash_command(name="change_crypto_prices", description='Сменить цены криптовалют.')
-async def change_crypto_prices(ctx):
-    print("Кто-то принудительно изменил цены криптовалют!")
-    generate_crypto_prices()
-    await ctx.send("Вы принудительно изменили цены криптовалют!")
-
 def load_promo_codes():
     with open('promocodes.txt', 'r') as file:
         codes = {}
@@ -480,18 +444,13 @@ async def promo(ctx, code: str):
     server_id = str(ctx.guild.id)
     user_id = str(ctx.author.id)
     user_data = load_user_data(server_id, user_id)
-
-    used_promocodes = user_data.get('used_promocodes', [])  
-
-    if code is None:
-        await ctx.send("Пожалуйста, введите промокод.")
-        return
+    used_promocodes = user_data.get('used_promocodes', [])
+    promo_codes = load_promo_codes()  
 
     if code in used_promocodes:
         await ctx.send("Промокод уже использован.")
         return
 
-    promo_codes = load_promo_codes()
     if code in promo_codes:
         action = promo_codes[code]
         try:
@@ -605,7 +564,7 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         save_user_data(server_id, user_id, user_data)
 
 # Слеш-команда для покупки майнера
-@bot.slash_command(name='buy_miner', description="Покупка майнера")
+@bot.slash_command(name='buy_miner', description="Команда для покупки майнера")
 async def buy_miner_cmd(inter, miner: str):
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     miners_data = load_miners_data()
@@ -627,7 +586,7 @@ async def buy_miner_cmd(inter, miner: str):
                                            "Используйте /miners_info для просмотра списка майнеров")
 
 # Слеш-команда для просмотра информации о пользователе
-@bot.slash_command(name='user_info', description="Просмотр информации о пользователе и его майнерах")
+@bot.slash_command(name='user_info', description="Просмотр информации о пользователе")
 async def user_info_cmd(inter, user: disnake.User = None):
     user_id = str(user.id) if user else str(inter.user.id)
     server_id = str(inter.guild_id)
@@ -661,14 +620,20 @@ def load_miners_data():
 
 # Функция для получения информации о майнерах
 def get_miners_info(miners_data):
-    return "\n".join([f"{miner}: Цена - {miners_data[miner]['price']} :coin:, Хэшрейт - {miners_data[miner]['hashrate']}, Потребление - {miners_data[miner]['electricity_consumption']} в час, Вероятность отказа - {miners_data[miner]['chance_of_failure']}, Поддерживаемые криптовалюты - {', '.join(miners_data[miner]['supported_cryptos'])}" for miner in miners_data])
+    return "\n".join([f"{miner}: Цена - {miners_data[miner]['price']} :coin:, Хэшрейт - {miners_data[miner]['hashrate']}, Потребление - {miners_data[miner]['electricity_consumption']} в 5 минут, Поддерживаемые криптовалюты - {', '.join(miners_data[miner]['supported_cryptos'])}" for miner in miners_data])
+
+# Функция для отправки длинного сообщения
+async def send_long_message(channel, message_content):
+    max_length = 2000
+    for chunk in [message_content[i:i+max_length] for i in range(0, len(message_content), max_length)]:
+        await channel.send(chunk)
 
 # Слеш-команда для просмотра информации о майнерах
 @bot.slash_command(name='miners_info', description="Просмотр информации о доступных майнерах")
 async def miners_info_cmd(inter):
     miners_data = load_miners_data()
     miners_info = "Доступные майнеры:\n" + get_miners_info(miners_data)
-    await inter.response.send_message(miners_info)
+    await send_long_message(inter.channel, miners_info)
 
 @bot.slash_command(name='start_mining', description="Запуск майнинга")
 async def start_mining_cmd(inter, selected_crypto: str = None):
@@ -778,9 +743,6 @@ def get_token():
         return None
 
 def main():
-    server_id = "no_server_id_now"
-    file_checker(server_id)
-    load_crypto_prices()
     bot.last_work_time = {}
     bot.last_steal_time = {}
     bot.loop.create_task(crypto_prices_generator())
