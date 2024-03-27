@@ -1,56 +1,80 @@
 {
-    "Ant Miner S18KPro": {
-        "price": 13400,
-        "hashrate": "98",
-        "electricity_consumption": "8",
-        "supported_cryptos": [
-            "bitcoin"
-        ]
-    },
-    "Ant Miner S19KPro": {
-        "price": 15800,
-        "hashrate": "115",
-        "electricity_consumption": "12",
+    "Ant Miner S20K": {
+        "price": 20753,
+        "hashrate": "100",
+        "electricity_consumption": "13",
         "supported_cryptos": [
             "bitcoin"
         ]
     },
     "Ant Miner S20KPro": {
-        "price": 23460,
-        "hashrate": "130",
-        "electricity_consumption": "16",
+        "price": 27253,
+        "hashrate": "180",
+        "electricity_consumption": "17",
         "supported_cryptos": [
             "bitcoin"
         ]
     },
-    "Avalon 954": {
-        "price": 6300,
-        "hashrate": "640",
-        "electricity_consumption": "35",
+    "Ant Miner S21K": {
+        "price": 27500,
+        "hashrate": "213",
+        "electricity_consumption": "15",
+        "supported_cryptos": [
+            "bitcoin"
+        ]
+    },
+    "Ant Miner S21KPro": {
+        "price": 30000,
+        "hashrate": "180",
+        "electricity_consumption": "18",
+        "supported_cryptos": [
+            "bitcoin"
+        ]
+    },
+    "Xeon 2620 v2": {
+        "price": 2000,
+        "hashrate": "45",
+        "electricity_consumption": "1",
         "supported_cryptos": [
             "bananacoin"
         ]
     },
-    "Avalon 1045": {
-        "price": 7400,
-        "hashrate": "735",
-        "electricity_consumption": "35",
+    "Xeon 2630 v2": {
+        "price": 3500,
+        "hashrate": "78",
+        "electricity_consumption": "3",
         "supported_cryptos": [
             "bananacoin"
         ]
     },
-    "Avalon 1050": {
-        "price": 8500,
-        "hashrate": "800",
-        "electricity_consumption": "40",
+    "Xeon 2640 v2": {
+        "price": 5000,
+        "hashrate": "100",
+        "electricity_consumption": "5",
         "supported_cryptos": [
             "bananacoin"
         ]
     },
-    "Avalon 1050 Pro": {
+    "Xeon 2660 v3": {
+        "price": 7560,
+        "hashrate": "149",
+        "electricity_consumption": "7",
+        "supported_cryptos": [
+            "bananacoin"
+        ]
+    },
+    "Xeon 2680 v2": {
         "price": 10000,
-        "hashrate": "1000",
-        "electricity_consumption": "50",
+        "hashrate": "353",
+        "electricity_consumption": "15",
+        "supported_cryptos": [
+            "bananacoin"
+        ]
+    },
+    "Xeon 2690 v3": {
+        "price": 12000,
+        "hashrate": "370",
+        "electricity_consumption": "10",
         "supported_cryptos": [
             "bananacoin"
         ]
@@ -59,6 +83,14 @@
         "price": 12500,
         "hashrate": "80",
         "electricity_consumption": "9",
+        "supported_cryptos": [
+            "ethereum"
+        ]
+    },
+    "Ultra GPU 2060": {
+        "price": 26000,
+        "hashrate": "180",
+        "electricity_consumption": "19",
         "supported_cryptos": [
             "ethereum"
         ]
@@ -75,14 +107,6 @@
         "price": 42000,
         "hashrate": "315",
         "electricity_consumption": "18",
-        "supported_cryptos": [
-            "ethereum"
-        ]
-    },
-    "Ultra GPU 4070": {
-        "price": 45000.0,
-        "hashrate": "350",
-        "electricity_consumption": "20",
         "supported_cryptos": [
             "ethereum"
         ]
