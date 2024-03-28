@@ -1,4 +1,5 @@
 import json
+import os
 
 # Функция для ввода данных о новом бизнесе
 def input_new_business():
@@ -15,16 +16,26 @@ def input_new_business():
         "consumption": consumption,
     }
     
-    # Загрузка данных из JSON-файла
-    with open("business_data.json", "r") as file:
-        business_data = json.load(file)
+    # Проверяем существование файла
+    file_path = "business_data.json"
+    if not os.path.exists(file_path):
+        with open(file_path, "w", encoding='utf-8') as file:
+            json.dump({}, file, ensure_ascii=False)  # Создаем пустой JSON-файл, если его нет
     
-    # Добавление нового майнера в список майнеров
+    # Загрузка данных из JSON-файла
+    try:
+        with open(file_path, "r", encoding='utf-8') as file:
+            business_data = json.load(file)
+    except (json.JSONDecodeError, FileNotFoundError):
+        # Если файл пустой или его формат поврежден, используем пустой словарь
+        business_data = {}
+    
+    # Добавление нового бизнеса в словарь
     business_data[name] = new_business
     
     # Сохранение обновленных данных в JSON-файл
-    with open("business_data.json", "w") as file:
-        json.dump(business_data, file, indent=4)
+    with open(file_path, "w", encoding='utf-8') as file:
+        json.dump(business_data, file, indent=4, ensure_ascii=False)
     
     print(f"Бизнес {name} успешно добавлен!")
 
