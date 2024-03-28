@@ -1,0 +1,17 @@
+{
+    "Постомат bananies": {
+        "price": 1500.0,
+        "income": "200",
+        "consumption": "93"
+    },
+    "Пункт выдачи bananies": {
+        "price": 35000.0,
+        "income": "550",
+        "consumption": "150"
+    },
+    "я видел": {
+        "price": 100000.0,
+        "income": "730",
+        "consumption": "130"
+    }
+}
