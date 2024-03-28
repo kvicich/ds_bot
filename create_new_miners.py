@@ -1,4 +1,5 @@
 import json
+import os
 
 # Функция для ввода данных о новом майнере
 def input_new_miner():
@@ -18,16 +19,25 @@ def input_new_miner():
         "supported_cryptos": [crypto.strip() for crypto in supported_cryptos]
     }
     
-    # Загрузка данных из JSON-файла
-    with open("miners_data.json", "r") as file:
-        miners_data = json.load(file)
+    # Проверяем существование файла и загружаем данные из JSON-файла
+    file_path = "miners_data.json"
+    if not os.path.exists(file_path):
+        with open(file_path, "w", encoding='utf-8') as file:
+            json.dump({}, file, ensure_ascii=False)  # Создаем пустой JSON-файл, если его нет
+    
+    try:
+        with open(file_path, "r", encoding='utf-8') as file:
+            miners_data = json.load(file)
+    except (json.JSONDecodeError, FileNotFoundError):
+        # Если файл пустой или его формат поврежден, используем пустой словарь
+        miners_data = {}
     
     # Добавление нового майнера в список майнеров
     miners_data[name] = new_miner
     
     # Сохранение обновленных данных в JSON-файл
-    with open("miners_data.json", "w") as file:
-        json.dump(miners_data, file, indent=4)
+    with open(file_path, "w", encoding='utf-8') as file:
+        json.dump(miners_data, file, indent=4, ensure_ascii=False)
     
     print(f"Майнер {name} успешно добавлен!")
 
