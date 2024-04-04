@@ -14,6 +14,7 @@ STEAL_COOLDOWN = 500  # Время в секундах между попытка
 FAILED_STEAL_MIN_LOSS = 15 # Минимальная потеря монет в /steal
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
 MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
+BUSINESS_DATA_PATH = "business_data.json" # Файл с информацией о майнерах
 under_construction = "working.txt"
 mining_tasks = {}
 
@@ -36,7 +37,7 @@ def load_user_data(server_id, user_id):
     ensure_server_data_dir(server_id)
     data_path = user_data_path(server_id, user_id)
     if os.path.exists(data_path):
-        with open(data_path, "r") as f:
+        with open(data_path, "r", encoding="UTF-8") as f:
             print("Была загружена дата пользователей")
             return json.load(f)
     else:
@@ -45,11 +46,26 @@ def load_user_data(server_id, user_id):
             print("Была загружена дата пользователей")
         return {}
 
+# Эта штука вообще всё за раз грузит, будем использовать
+def load_all_user_data():
+    all_user_data = {}
+    for server_id in os.listdir(SERVERS_DATA_DIR):
+        server_data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+        if os.path.isdir(server_data_dir):
+            server_users_data = {}
+            for user_file in os.listdir(server_data_dir):
+                if user_file.endswith(".json"):
+                    user_id = user_file.split(".")[0]
+                    user_data = load_user_data(int(server_id), user_id)
+                    server_users_data[user_id] = user_data
+            all_user_data[server_id] = server_users_data
+    return all_user_data
+
 # А вот эта штучка сохраняет дату юзеров
 def save_user_data(server_id, user_id, data):
     ensure_server_data_dir(server_id)
     data_path = user_data_path(server_id, user_id)
-    with open(data_path, "w") as f:
+    with open(data_path, "w", encoding="UTF-8") as f:
         json.dump(data, f)
         print("Была сохранена дата пользователей")
 
@@ -611,7 +627,13 @@ async def user_info_cmd(inter, user: disnake.User = None):
         for miner, count in user_data["miners"].items():
             miners_info += f"{miner} x{count}\n"
     
-    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}{crypto_str}\n{miners_info}')
+    business_info = ""
+    if "business" in user_data:
+        business_info = "Бизнесы:\n"
+        for business, count in user_data["business"].items():
+            business_info += f"{business}: {count}\n"
+    
+    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}\n{crypto_str}\n{miners_info}\n{business_info}')
 
 # Загружаем данные майнеров
 def load_miners_data():
@@ -708,20 +730,92 @@ async def stop_mining_cmd(inter):
     else:
         await inter.response.send_message("Майнинг не запущен.")
 
-@bot.slash_command(name='buy_business', description="Купить бизнес")
-async def buy_business(inter):
-    random_message = await randy_random()
-    await inter.response.send_message(random_message)
+# Загружаем данные бизнесов
+def load_business_data():
+    with open(BUSINESS_DATA_PATH, "r", encoding="UTF-8") as f:
+        return json.load(f)
 
-@bot.slash_command(name='businnes_control', description="Управлять бизнесами")
-async def business_control(inter):
-    random_message = await randy_random()
-    await inter.response.send_message(random_message)
+@bot.slash_command(name='buy_business', description="Купить бизнес")
+async def buy_business(inter, business: str):
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
+    business_data = load_business_data()
+    user_data = load_user_data(server_id, user_id)
+    
+    if business in business_data:
+        business_info = business_data[business]
+        if business_info["price"] <= user_data.get("money", 0):
+            user_data["money"] -= business_info["price"]
+            if "business" not in user_data:
+                user_data["business"] = {}
+            user_data["business"][business] = user_data["business"].get(business, 0) + 1
+            save_user_data(server_id, user_id, user_data)
+            await inter.response.send_message(f"Бизнес {business} успешно куплен!")
+        else:
+            await inter.response.send_message("У вас недостаточно средств для покупки этого бизнеса.")
+    else:
+        await inter.response.send_message("Данный бизнес не существует.\n"
+                                           "Используйте /business_info для просмотра списка бизнесов")
+
+@bot.slash_command(name='business_info', description="Информация о бизнесах")
+async def business_info(inter):
+    business_data = load_business_data()
+    if not business_data:
+        await inter.response.send_message("В настоящее время нет доступных бизнесов.")
+        return
+    
+    business_info = "\n".join(business_data.keys())
+    max_length = 2000
+    if len(business_info) <= max_length:
+        await inter.response.send_message(f"Список доступных бизнесов:\n{business_info}")
+    else:
+        chunks = [business_info[i:i+max_length] for i in range(0, len(business_info), max_length)]
+        for chunk in chunks:
+            await inter.response.send_message(f"Список доступных бизнесов:\n{chunk}")
 
 @bot.slash_command(name='sell_business', description="Продать бизнес")
-async def sell_business(inter):
-    random_message = await randy_random()
-    await inter.response.send_message(random_message)
+async def sell_business(inter, business: str):
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
+    user_data = load_user_data(server_id, user_id)
+    
+    if "business" in user_data and business in user_data["business"]:
+        business_data = load_business_data()
+        if business in business_data:
+            business_info = business_data[business]
+            user_money = user_data.get("money", 0)
+            user_business_count = user_data["business"][business]
+            user_data["money"] = user_money + user_business_count * business_info["price"] * 0.8
+            del user_data["business"][business]
+            save_user_data(server_id, user_id, user_data)
+            await inter.response.send_message(f"Бизнес {business} успешно продан!")
+        else:
+            await inter.response.send_message("Данный бизнес не существует.")
+    else:
+        await inter.response.send_message("У вас нет такого бизнеса.")
+
+# Функция для обновления состояния бизнесов
+async def update_businesses():
+    while True:
+        await asyncio.sleep(30)  # Указывать в секундах 60 секунд = 1 минута
+        print("Начинаю обработку...")
+        business_data = load_business_data()
+        all_user_data = load_all_user_data()
+        for server_id, users_data in all_user_data.items():
+            for user_id, user_data in users_data.items():
+                if "business" in user_data:
+                    user_businesses = user_data["business"]
+                    for business_name, business_count in user_businesses.items():
+                        if business_name in business_data:
+                            business_info = business_data[business_name]
+                            income = float(business_info["income"])
+                            consumption = float(business_info["consumption"])
+                            user_money = user_data.get("money", 0)
+                            user_data["money"] = user_money + income * business_count - consumption * business_count
+                            save_user_data(server_id, user_id, user_data)
+                            print(f"Обработан бизнес пользователя с айди: {user_id}")
+                        else:
+                            print(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
+                else:
+                    print(f"Пользователь с ID {user_id} не имеет бизнесов.")
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
@@ -743,9 +837,10 @@ def get_token():
         return None
 
 def main():
-    bot.last_work_time = {}
+    bot.last_work_time = {} 
     bot.last_steal_time = {}
-    bot.loop.create_task(crypto_prices_generator())
+    bot.loop.create_task(crypto_prices_generator()) # Запускаем генератор цен криптовалюты
+    bot.loop.create_task(update_businesses()) # Запускаем проверку бизнесов
     bot.run(get_token())
 
 if __name__ == "__main__":
