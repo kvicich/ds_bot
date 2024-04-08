@@ -756,21 +756,24 @@ async def buy_business(inter, business: str):
         await inter.response.send_message("Данный бизнес не существует.\n"
                                            "Используйте /business_info для просмотра списка бизнесов")
 
-@bot.slash_command(name='business_info', description="Информация о бизнесах")
+# Функция для получения информации о майнерах
+def get_business_info(business_data, business):
+    return f"{business}: Цена - {business_data[business]['price']} :coin:, Доход - {business_data[business]['income']}, Потребление - {business_data[business]['consumption']} в 30 минут"
+
+# Функция для отправки длинного сообщения
+async def send_long_message(channel, message_content):
+    max_length = 2000
+    for chunk in [message_content[i:i+max_length] for i in range(0, len(message_content), max_length)]:
+        await channel.send(chunk)
+
+# Слеш-команда для просмотра информации о майнерах
+@bot.slash_command(name='business_info', description="Просмотр информации о доступных бизнесах")
 async def business_info(inter):
     business_data = load_business_data()
-    if not business_data:
-        await inter.response.send_message("В настоящее время нет доступных бизнесов.")
-        return
-    
-    business_info = "\n".join(business_data.keys())
-    max_length = 2000
-    if len(business_info) <= max_length:
-        await inter.response.send_message(f"Список доступных бизнесов:\n{business_info}")
-    else:
-        chunks = [business_info[i:i+max_length] for i in range(0, len(business_info), max_length)]
-        for chunk in chunks:
-            await inter.response.send_message(f"Список доступных бизнесов:\n{chunk}")
+    business_info = "Доступные майнеры:\n"
+    for business in business_data:
+        business_info += get_business_info(business_data, business) + "\n"
+    await send_long_message(inter.channel, business_info)
 
 @bot.slash_command(name='sell_business', description="Продать бизнес")
 async def sell_business(inter, business: str):
@@ -796,7 +799,6 @@ async def sell_business(inter, business: str):
 async def update_businesses():
     while True:
         await asyncio.sleep(30)  # Указывать в секундах 60 секунд = 1 минута
-        print("Начинаю обработку...")
         business_data = load_business_data()
         all_user_data = load_all_user_data()
         for server_id, users_data in all_user_data.items():
@@ -814,8 +816,6 @@ async def update_businesses():
                             print(f"Обработан бизнес пользователя с айди: {user_id}")
                         else:
                             print(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
-                else:
-                    print(f"Пользователь с ID {user_id} не имеет бизнесов.")
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
