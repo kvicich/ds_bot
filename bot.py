@@ -26,7 +26,7 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
 intents = disnake.Intents.default()
 bot = commands.Bot(command_prefix='!l!', sync_commands_debug=True, intents=intents)
 
-# Проверяем наличие папки сервера и создаём ее, если она отсутствует
+# После сброса экономики заебись
 def ensure_server_data_dir(server_id):
     server_dir = os.path.join(SERVERS_DATA_DIR, str(server_id))
     if not os.path.exists(server_dir):
@@ -69,6 +69,7 @@ def save_user_data(server_id, user_id, data):
         json.dump(data, f)
         print("Была сохранена дата пользователей")
 
+# Вычисляет точное местоположение личного файла юзера
 def user_data_path(server_id, user_id):
     return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
 
@@ -174,14 +175,10 @@ async def rem_tester(ctx, member: disnake.User):
 # Событие выполняющееся после полного запуска бота
 @bot.event
 async def on_ready():
-    print(f"Бот запущен, его имя {bot.user}")
-
-# Стартовая команда
-@bot.slash_command(name='start', description="Стартовая команда.")
-async def start_cmd(inter):
-    user_name = inter.user.name
-    guild_name = inter.guild.name
-    await inter.response.send_message(f'Приветствую, это на данный момент тестовая команда. Все команды: /help Имя бота: {bot.user.name}. Твой юзернейм: {user_name}. Имя сервера: {guild_name}. Тестовое эмодзи: :fly: ')
+    print(f"Бот запущен, его имя {bot.user}\n"
+          f"Все сервера где есть бот: {bot.guilds}")
+    await bot.change_presence(activity=disnake.Game(name="Как заебать юзера"))
+    print("Статус бота изменён")
 
 # Команда для подработки
 @bot.slash_command(name='sidejob', description="Работка.")
@@ -223,7 +220,6 @@ async def steal_cmd(inter):
             time_left = STEAL_COOLDOWN - time_elapsed
             await inter.response.send_message(f'Вы недавно уже пытались что-то украсть. Подождите еще {int(time_left)} секунд.')
             return
-    await inter.response.defer()  # Отправляем ответ о том, что команда получена и будет обработана
     last_steal_time[user_id] = current_time
     bot.last_steal_time[server_id] = last_steal_time
     if random.random() < 0.4567:  # Шанс 45,67%
@@ -237,7 +233,7 @@ async def steal_cmd(inter):
         user_data["money"] = user_balance
         save_user_data(server_id, user_id, user_data)
         steal_message = steal_message.replace("{stolen_amount}", str(stolen_amount))
-        await inter.edit_original_message(content=f'{inter.author.mention}, {steal_message}')
+        await inter.response.send_message(f'{inter.author.mention}, {steal_message}')
     else:
         lost_amount = random.randint(FAILED_STEAL_MIN_LOSS, FAILED_STEAL_MAX_LOSS)
         user_data = load_user_data(server_id, user_id)
@@ -245,6 +241,7 @@ async def steal_cmd(inter):
         user_balance -= lost_amount  
         user_data["money"] = user_balance
         save_user_data(server_id, user_id, user_data)
+        await inter.response.send_message(f"Попытка не удалась, вы потеряли {lost_amount} :coin:")
         
 @bot.slash_command(name='ping', description="Проверяет ваш пинг.")
 async def ping(inter):
@@ -262,15 +259,12 @@ async def ping(inter):
 @owner_command
 async def add_admin(ctx, member: disnake.Member):
     admin_data_path = os.path.join("admins.json")
-
     if os.path.exists(admin_data_path):
         with open(admin_data_path, "r") as file:
             admins = json.load(file)
     else:
         admins = []
-
     admins.append(member.id)
-
     with open(admin_data_path, "w") as file:
         json.dump(admins, file)
 
@@ -281,7 +275,6 @@ async def add_admin(ctx, member: disnake.Member):
 @owner_command
 async def rem_admin(ctx, member: disnake.Member):
     admin_data_path = os.path.join("admins.json")
-
     if os.path.exists(admin_data_path):
         with open(admin_data_path, "r") as file:
             admins = json.load(file)
@@ -355,7 +348,6 @@ async def change_crypto_prices(inter):
 @admin_command
 @bot.slash_command(name='give_money', description="Выдает деньги пользователю.")
 async def give_money(inter, member: disnake.Member, amount: int):
-
     # Загрузка данных пользователя
     user_id = str(inter.author.id)
     server_id = str(inter.guild.id)
@@ -374,7 +366,6 @@ async def give_money(inter, member: disnake.Member, amount: int):
 @admin_command
 @bot.slash_command(name='take_money', description="Отнимает деньги у пользователя.")
 async def take_money(inter, member: disnake.Member, amount: int):
-
     # Загрузка данных пользователя
     user_id = str(member.id)
     server_id = str(inter.guild.id)
@@ -398,7 +389,6 @@ async def take_money(inter, member: disnake.Member, amount: int):
 @admin_command
 @bot.slash_command(name='give_crypto', description="Выдает криптовалюту пользователю.")
 async def give_crypto(inter, currency: str, member: disnake.Member, amount: int):
-
     # Проверка наличия указанной криптовалюты в списке
     if currency.lower() not in CRYPTO_LIST:
         await inter.response.send_message(f'Криптовалюта {currency} не найдена в списке доступных криптовалют.')
@@ -422,7 +412,6 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
 @admin_command
 @bot.slash_command(name='take_crypto', description="Отнимает криптовалюту у пользователя.")
 async def take_crypto(inter, currency: str, member: disnake.Member, amount: int):
-
     # Проверка наличия указанной криптовалюты в списке
     if currency.lower() not in CRYPTO_LIST:
         await inter.response.send_message(f'Криптовалюта {currency} не найдена в списке доступных криптовалют.')
@@ -463,6 +452,7 @@ async def promo(ctx, code: str):
     used_promocodes = user_data.get('used_promocodes', [])
     promo_codes = load_promo_codes()  
 
+    # Проверка на использование промокода
     if code in used_promocodes:
         await ctx.send("Промокод уже использован.")
         return
@@ -488,7 +478,6 @@ async def promo(ctx, code: str):
         user_data['used_promocodes'] = used_promocodes
     else:
         await ctx.send("Промокод не найден.")
-
     save_user_data(server_id, user_id, user_data)
     
 @bot.slash_command(name="exchange", description='Позволяет обменивать валюты')
@@ -565,11 +554,9 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
             await ctx.send(f"У вас недостаточно {source_currency} для обмена.")
             return
 
-        # Вычисляем сумму после обмена
+        # Выполняем обмен
         exchanged_amount = amount * (source_rate / target_rate)
         exchanged_rounded_amount = round(exchanged_amount, 5)
-
-        # Выполняем обмен
         user_data[source_currency.lower()] -= amount
         user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_rounded_amount
 
@@ -606,27 +593,22 @@ async def buy_miner_cmd(inter, miner: str):
 async def user_info_cmd(inter, user: disnake.User = None):
     user_id = str(user.id) if user else str(inter.user.id)
     server_id = str(inter.guild_id)
-    
     user_data = load_user_data(server_id, user_id)
     balance = user_data.get("money", 0)
     crypto_wallet = {key: value for key, value in user_data.items() if key in CRYPTO_LIST}
     
     balance_str = f'**Баланс:** {balance} :coin:\n\n'
-    
     crypto_str = ""
     for currency, data in CRYPTO_LIST.items():
         amount = crypto_wallet.get(currency, 0)
         crypto_str += f'{data["emoji"]} {currency.capitalize()}: {amount}\n'
-    
     if not crypto_str:
         crypto_str = "У вас нет криптовалют."
-    
     miners_info = ""
     if "miners" in user_data:
         miners_info = "Майнеры:\n"
         for miner, count in user_data["miners"].items():
             miners_info += f"{miner} x{count}\n"
-    
     business_info = ""
     if "business" in user_data:
         business_info = "Бизнесы:\n"
@@ -702,7 +684,6 @@ async def mine_coins(server_id, user_id, selected_crypto=None):
 
                 hashrate = float(miner_info["hashrate"].split()[0]) * miner_count
                 consumption = float(miner_info["electricity_consumption"].split()[0]) * miner_count
-
                 coins_mined = 0
                 if selected_crypto == "bitcoin":
                     coins_mined = hashrate / 5000
@@ -756,17 +737,11 @@ async def buy_business(inter, business: str):
         await inter.response.send_message("Данный бизнес не существует.\n"
                                            "Используйте /business_info для просмотра списка бизнесов")
 
-# Функция для получения информации о майнерах
+# Функция для получения информации о бизнесах
 def get_business_info(business_data, business):
     return f"{business}: Цена - {business_data[business]['price']} :coin:, Доход - {business_data[business]['income']}, Потребление - {business_data[business]['consumption']} в 30 минут"
 
-# Функция для отправки длинного сообщения
-async def send_long_message(channel, message_content):
-    max_length = 2000
-    for chunk in [message_content[i:i+max_length] for i in range(0, len(message_content), max_length)]:
-        await channel.send(chunk)
-
-# Слеш-команда для просмотра информации о майнерах
+# Слеш-команда для просмотра информации о бизнесах
 @bot.slash_command(name='business_info', description="Просмотр информации о доступных бизнесах")
 async def business_info(inter):
     business_data = load_business_data()
@@ -798,7 +773,7 @@ async def sell_business(inter, business: str):
 # Функция для обновления состояния бизнесов
 async def update_businesses():
     while True:
-        await asyncio.sleep(30)  # Указывать в секундах 60 секунд = 1 минута
+        await asyncio.sleep(1800)  # Указывать в секундах 60 секунд = 1 минута
         business_data = load_business_data()
         all_user_data = load_all_user_data()
         for server_id, users_data in all_user_data.items():
@@ -817,6 +792,21 @@ async def update_businesses():
                         else:
                             print(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
 
+@bot.slash_command(name='search_work', description="Поиск работы")
+async def s_work_cmd(inter):
+    message = await randy_random()
+    await inter.response.send_message(message)
+
+@bot.slash_command(name='work', description="Работать")
+async def s_work_cmd(inter):
+    message = await randy_random()
+    await inter.response.send_message(message)
+
+@bot.slash_command(name='quit_work', description="Уволится с работы")
+async def s_work_cmd(inter):
+    message = await randy_random()
+    await inter.response.send_message(message)
+
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
     token_file_path = os.path.join(token_directory, "TOKEN.txt")
@@ -834,7 +824,10 @@ def get_token():
             return None
     else:
         logger.error("Файл TOKEN.txt не найден")
-        return None
+        TOKEN = input("Введите токен:")
+        with open(token_file_path, 'w') as file:
+            file.write(TOKEN)
+        return TOKEN
 
 def main():
     bot.last_work_time = {} 
