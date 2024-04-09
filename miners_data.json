@@ -31,39 +31,15 @@
             "bitcoin"
         ]
     },
-    "Xeon 2620 v2": {
-        "price": 2000,
-        "hashrate": "45",
-        "electricity_consumption": "1",
-        "supported_cryptos": [
-            "bananacoin"
-        ]
-    },
-    "Xeon 2630 v2": {
-        "price": 3500,
-        "hashrate": "78",
-        "electricity_consumption": "3",
-        "supported_cryptos": [
-            "bananacoin"
-        ]
-    },
-    "Xeon 2640 v2": {
-        "price": 5000,
-        "hashrate": "100",
-        "electricity_consumption": "5",
-        "supported_cryptos": [
-            "bananacoin"
-        ]
-    },
-    "Xeon 2660 v3": {
-        "price": 7560,
+    "Xeon W3-2423": {
+        "price": 5460,
         "hashrate": "149",
         "electricity_consumption": "7",
         "supported_cryptos": [
             "bananacoin"
         ]
     },
-    "Xeon 2680 v2": {
+    "Xeon W5-2445": {
         "price": 10000,
         "hashrate": "353",
         "electricity_consumption": "15",
@@ -71,10 +47,18 @@
             "bananacoin"
         ]
     },
-    "Xeon 2690 v3": {
-        "price": 12000,
-        "hashrate": "370",
-        "electricity_consumption": "10",
+    "Xeon W7-2475X": {
+        "price": 15000,
+        "hashrate": "470",
+        "electricity_consumption": "23",
+        "supported_cryptos": [
+            "bananacoin"
+        ]
+    },
+    "Xeon W9-3495X": {
+        "price": 60000,
+        "hashrate": "1570",
+        "electricity_consumption": "45",
         "supported_cryptos": [
             "bananacoin"
         ]
