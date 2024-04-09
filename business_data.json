@@ -9,11 +9,6 @@
         "income": "550",
         "consumption": "150"
     },
-    "Кафе кофеёк": {
-        "price": 625000.0,
-        "income": "1000",
-        "consumption": "230"
-    },
     "Склад bananies": {
         "price": 75000.0,
         "income": "1350",
@@ -24,9 +19,24 @@
         "income": "730",
         "consumption": "130"
     },
+    "Кафе кофеёк": {
+        "price": 625000.0,
+        "income": "1000",
+        "consumption": "230"
+    },
     "Гипермаркет полоска": {
         "price": 1750000.0,
         "income": "2300",
         "consumption": "510"
+    },
+    "Пенькофф": {
+        "price": 250000000.0,
+        "income": "25000",
+        "consumption": "3000"
+    },
+    "Газпром": {
+        "price": 1000000000.0,
+        "income": "100000",
+        "consumption": "12000"
     }
 }
