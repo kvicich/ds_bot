@@ -2,3 +2,5 @@ TOKEN.txt
 __pycache__/
 Owner.json
 Testers.json
+servers_data
+crypto_prices.json
