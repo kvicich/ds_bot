@@ -1,23 +1,21 @@
 {
-    "professions": {
-        "Обслуживатель майнинговых ферм": {
-            "earnings": "150-250",
-            "requirements": {
-                "items": ["Ultra GPU 1060"]
-            }
-        },
-        "Полицейский": {
-            "earnings": "200-300",
-            "requirements": {
-                "items": ["военный билет"],
-                "money": 10000
-            }
-        },
-        "Строитель": {
-            "earnings": "100-200",
-            "requirements": {
-                "money": 5000
-            }
+    "Обслуживатель майнинговых ферм": {
+        "earnings": "150-250",
+        "requirements": {
+            "items": ["Ultra GPU 1060"]
+        }
+    },
+    "Полицейский": {
+        "earnings": "200-300",
+        "requirements": {
+            "items": ["военный билет"],
+            "money": 10000
+        }
+    },
+    "Строитель": {
+        "earnings": "100-200",
+        "requirements": {
+            "money": 5000
         }
     }
 }
