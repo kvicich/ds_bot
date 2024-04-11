@@ -43,7 +43,7 @@ def load_user_data(server_id, user_id):
     else:
         with open(data_path, "w") as f:
             json.dump({}, f)
-            print("Была загружена дата пользователей")
+            print("Загружена дата пользователя")
         return {}
 
 # Эта штука вообще всё за раз грузит, будем использовать
@@ -59,6 +59,7 @@ def load_all_user_data():
                     user_data = load_user_data(int(server_id), user_id)
                     server_users_data[user_id] = user_data
             all_user_data[server_id] = server_users_data
+    print("Загружена дата всех пользователей")
     return all_user_data
 
 # А вот эта штучка сохраняет дату юзеров
@@ -67,7 +68,7 @@ def save_user_data(server_id, user_id, data):
     data_path = user_data_path(server_id, user_id)
     with open(data_path, "w", encoding="UTF-8") as f:
         json.dump(data, f)
-        print("Была сохранена дата пользователей")
+        print("Сохранена дата пользователя")
 
 # Вычисляет точное местоположение личного файла юзера
 def user_data_path(server_id, user_id):
@@ -251,8 +252,7 @@ async def ping(inter):
     end_time = time.time()
     ping_time = round((end_time - start_time) * 1000)
     await inter.edit_original_message(content=f"Понг!\n"
-                                      f"Ваш пинг: {ping_time} мс"
-    )
+                                      f"Ваш пинг: {ping_time} мс")
 
 # Команда для добавления администратора
 @bot.slash_command(name='add_admin', description="Добавляет администратора на сервере.")
@@ -290,10 +290,10 @@ async def rem_admin(ctx, member: disnake.Member):
 
 # Команда для просмотра текущих курсов криптовалют
 @bot.slash_command(name='crypto_prices', description='Просмотреть текущие курсы криптовалют.')
-async def crypto_prices_cmd(ctx):
+async def crypto_prices_cmd(inter):
     crypto_list = load_crypto_prices()
     prices_str = '\n'.join([f"{crypto_list[currency]['emoji']} {currency.capitalize()}: {crypto_list[currency]['price']} :coin:" for currency in crypto_list])
-    await ctx.send(f"Текущие курсы криптовалют:\n{prices_str}")
+    await inter.response.send_message(f"Текущие курсы криптовалют:\n{prices_str}")
 
 # Функция для генерации новых цен криптовалют
 def generate_crypto_prices():
@@ -445,16 +445,16 @@ def load_promo_codes():
     return codes
 
 @bot.slash_command(name="promo", description='Позволяет ввести промокод.')
-async def promo(ctx, code: str):
-    server_id = str(ctx.guild.id)
-    user_id = str(ctx.author.id)
+async def promo(inter, code: str):
+    server_id = str(inter.guild.id)
+    user_id = str(inter.author.id)
     user_data = load_user_data(server_id, user_id)
     used_promocodes = user_data.get('used_promocodes', [])
     promo_codes = load_promo_codes()  
 
     # Проверка на использование промокода
     if code in used_promocodes:
-        await ctx.send("Промокод уже использован.")
+        await inter.response.send_message("Промокод уже использован.")
         return
 
     if code in promo_codes:
@@ -462,42 +462,42 @@ async def promo(ctx, code: str):
         try:
             value, key = action.split(' =+ ')
         except ValueError:
-            await ctx.send("Неправильный формат действия промокода.")
+            await inter.response.send_message("Неправильный формат действия промокода.")
             return
 
         if key == 'money':
             user_data['money'] = user_data.get('money', 0) + float(value)
-            await ctx.send(f"Вы получили {value} денег.")
+            await inter.response.send_message(f"Вы получили {value} денег.")
         elif key in ['bitcoin', 'ethereum', 'bananacoin']:
             user_data[key] = user_data.get(key, 0) + float(value)
-            await ctx.send(f"Вы получили {value} {key}.")
+            await inter.response.send_message(f"Вы получили {value} {key}.")
         else:
-            await ctx.send("Произошла ошибка при обработке промокода.")
+            await inter.response.send_message("Произошла ошибка при обработке промокода.")
 
         used_promocodes.append(code)
         user_data['used_promocodes'] = used_promocodes
     else:
-        await ctx.send("Промокод не найден.")
+        await inter.response.send_message("Промокод не найден.")
     save_user_data(server_id, user_id, user_data)
     
 @bot.slash_command(name="exchange", description='Позволяет обменивать валюты')
-async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: float):
+async def exchange_cmd(inter, source_currency: str, target_currency: str, amount: float):
     # Проверяем, что валюты из списка доступных
     if source_currency.lower() not in CRYPTO_LIST and source_currency.lower() != "money":
-        await ctx.send(f"Валюта {source_currency} не найдена в списке доступных криптовалют и денег.")
+        await inter.response.send_message(f"Валюта {source_currency} не найдена в списке доступных криптовалют и денег.")
         return
     if target_currency.lower() not in CRYPTO_LIST and target_currency.lower() != "money":
-        await ctx.send(f"Валюта {target_currency} не найдена в списке доступных криптовалют и денег.")
+        await inter.response.send_message(f"Валюта {target_currency} не найдена в списке доступных криптовалют и денег.")
         return
 
     # Обрабатываем случай обмена денег на криптовалюту
     if source_currency.lower() == "money":
         # Проверяем, что пользователь имеет достаточно денег для обмена
-        user_id = str(ctx.author.id)
-        server_id = str(ctx.guild.id)
+        user_id = str(inter.author.id)
+        server_id = str(inter.guild.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get("money", 0) < amount:
-            await ctx.send("У вас недостаточно денег для обмена.")
+            await inter.response.send_message("У вас недостаточно денег для обмена.")
             return
 
         # Вычисляем сумму после обмена
@@ -510,7 +510,7 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_rounded_amount
 
         # Сообщаем пользователю об успешном обмене
-        await ctx.send(f"Вы успешно обменяли {amount} денег на {exchanged_rounded_amount} {target_currency}.")
+        await inter.response.send_message(f"Вы успешно обменяли {amount} денег на {exchanged_rounded_amount} {target_currency}.")
 
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
@@ -518,11 +518,11 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
     # Обрабатываем случай обмена криптовалюты на деньги
     elif target_currency.lower() == "money":
         # Проверяем, что пользователь имеет достаточно криптовалюты для обмена
-        user_id = str(ctx.author.id)
-        server_id = str(ctx.guild.id)
+        user_id = str(inter.author.id)
+        server_id = str(inter.guild.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get(source_currency.lower(), 0) < amount:
-            await ctx.send(f"У вас недостаточно {source_currency} для обмена.")
+            await inter.response.send_message(f"У вас недостаточно {source_currency} для обмена.")
             return
 
         # Вычисляем сумму после обмена
@@ -535,7 +535,7 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         user_data[source_currency.lower()] -= amount
 
         # Сообщаем пользователю об успешном обмене
-        await ctx.send(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} денег.")
+        await inter.response.send_message(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} денег.")
 
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
@@ -547,11 +547,11 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         target_rate = CRYPTO_LIST[target_currency.lower()]["price"]
 
         # Проверяем, что пользователь имеет достаточно криптовалюты для обмена
-        user_id = str(ctx.author.id)
-        server_id = str(ctx.guild.id)
+        user_id = str(inter.author.id)
+        server_id = str(inter.guild.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get(source_currency.lower(), 0) < amount:
-            await ctx.send(f"У вас недостаточно {source_currency} для обмена.")
+            await inter.response.send_message(f"У вас недостаточно {source_currency} для обмена.")
             return
 
         # Выполняем обмен
@@ -561,7 +561,7 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_rounded_amount
 
         # Сообщаем пользователю об успешном обмене
-        await ctx.send(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} {target_currency}.")
+        await inter.response.send_message(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} {target_currency}.")
 
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
@@ -798,12 +798,12 @@ async def s_work_cmd(inter):
     await inter.response.send_message(message)
 
 @bot.slash_command(name='work', description="Работать")
-async def s_work_cmd(inter):
+async def w_work_cmd(inter):
     message = await randy_random()
     await inter.response.send_message(message)
 
 @bot.slash_command(name='quit_work', description="Уволится с работы")
-async def s_work_cmd(inter):
+async def q_work_cmd(inter):
     message = await randy_random()
     await inter.response.send_message(message)
 
