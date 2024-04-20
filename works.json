@@ -1,21 +1,25 @@
 {
-    "Обслуживатель майнинговых ферм": {
-        "earnings": "150-250",
-        "requirements": {
-            "items": ["Ultra GPU 1060"]
-        }
-    },
-    "Полицейский": {
-        "earnings": "200-300",
-        "requirements": {
-            "items": ["военный билет"],
-            "money": 10000
-        }
-    },
-    "Строитель": {
-        "earnings": "100-200",
-        "requirements": {
-            "money": 5000
-        }
-    }
-}
+    "works": [
+      {
+        "name": "Математик (легкий)",
+        "description": "Решайте математические задачи на легком уровне сложности.",
+        "type": "Mathematics",
+        "difficulty": "easy",
+        "salary": "100-900 money"
+      },
+      {
+        "name": "Математик (средний)",
+        "description": "Решайте математические задачи на среднем уровне сложности.",
+        "type": "Mathematics",
+        "difficulty": "medium",
+        "salary": "100-900 money"
+      },
+      {
+        "name": "Математик (сложный)",
+        "description": "Решайте математические задачи на высоком уровне сложности.",
+        "type": "Mathematics",
+        "difficulty": "hard",
+        "salary": "100-900 money"
+      }
+    ]
+  }
