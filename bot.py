@@ -349,7 +349,7 @@ async def change_crypto_prices(inter):
 @bot.slash_command(name='give_money', description="Выдает деньги пользователю.")
 async def give_money(inter, member: disnake.Member, amount: int):
     # Загрузка данных пользователя
-    user_id = str(inter.author.id)
+    user_id = str(member.id)
     server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
 
@@ -395,7 +395,7 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
         return
 
     # Загрузка данных пользователя
-    user_id = str(inter.author.id)
+    user_id = str(member.id)
     server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
 
@@ -624,7 +624,7 @@ def load_miners_data():
 
 # Функция для получения информации о майнерах
 def get_miners_info(miners_data):
-    return "\n".join([f"{miner}: Цена - {miners_data[miner]['price']} :coin:, Хэшрейт - {miners_data[miner]['hashrate']}, Потребление - {miners_data[miner]['electricity_consumption']} в 5 минут, Поддерживаемые криптовалюты - {', '.join(miners_data[miner]['supported_cryptos'])}" for miner in miners_data])
+    return "\n".join([f"{miner}: Цена - {miners_data[miner]['price']} :coin:, Хэшрейт - {miners_data[miner]['hashrate']}, Потребление - {miners_data[miner]['electricity_consumption']} :coin: в 5 минут, Поддерживаемые криптовалюты - {', '.join(miners_data[miner]['supported_cryptos'])}" for miner in miners_data])
 
 # Функция для отправки длинного сообщения
 async def send_long_message(channel, message_content):
@@ -739,13 +739,13 @@ async def buy_business(inter, business: str):
 
 # Функция для получения информации о бизнесах
 def get_business_info(business_data, business):
-    return f"{business}: Цена - {business_data[business]['price']} :coin:, Доход - {business_data[business]['income']}, Потребление - {business_data[business]['consumption']} в 30 минут"
+    return f"{business}: Цена - {business_data[business]['price']} :coin:, Доход - {business_data[business]['income']}, Потребление - {business_data[business]['consumption']} :coin: в 30 минут"
 
 # Слеш-команда для просмотра информации о бизнесах
 @bot.slash_command(name='business_info', description="Просмотр информации о доступных бизнесах")
 async def business_info(inter):
     business_data = load_business_data()
-    business_info = "Доступные майнеры:\n"
+    business_info = "Доступные бизнесы:\n"
     for business in business_data:
         business_info += get_business_info(business_data, business) + "\n"
     await send_long_message(inter.channel, business_info)
@@ -792,10 +792,86 @@ async def update_businesses():
                         else:
                             print(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
 
+# Функция для загрузки данных о работах из файла
+def load_works(filename):
+    with open(filename, "r", encoding="utf-8") as file:
+        works_data = json.load(file)
+    return works_data["works"]
+
+# Команда для отображения информации о доступных работах
+@bot.slash_command(name='works_info', description="Просмотр информации о доступных работах")
+async def works_info(inter):
+    # Загрузка данных о работах из файла
+    works_data = load_works("works.json")
+
+    works_description = "Список доступных работ:\n"
+    for work in works_data:
+        name = work["name"]
+        description = work["description"]
+        work_type = work["type"]
+        difficulty = work["difficulty"]
+        salary = work["salary"]
+        works_description += f"Название: {name}\nОписание: {description}\nТип: {work_type}\nСложность: {difficulty}\nЗаработок: {salary}\n\n"
+
+    await send_long_message(inter.channel, works_description)
+
 @bot.slash_command(name='search_work', description="Поиск работы")
-async def s_work_cmd(inter):
-    message = await randy_random()
-    await inter.response.send_message(message)
+async def s_work(inter):
+    # Загрузка данных пользователя
+    user_id = inter.author.id
+    user_data = load_user_data(inter.guild.id, user_id)
+
+    # Проверка, была ли уже предложена работа пользователю
+    if "current_work" in user_data:
+        await inter.response.send_message("У вас уже есть предложенная работа. Завершите текущую работу, прежде чем искать новую.")
+        return
+
+    # Загрузка данных о работах
+    works_data = load_works("works.json")
+
+    # Поиск подходящей работы для пользователя
+    suitable_work = None
+    while not suitable_work:
+        # Выбор случайной работы из загруженных данных
+        random_work = random.choice(works_data)
+        name = random_work["name"]
+        work_type = random_work["type"]
+        difficulty = random_work["difficulty"]
+
+        # Проверка критериев пользователя
+        if check_criteria(user_data, work_type, difficulty):
+            suitable_work = random_work
+
+    # Сохранение предложенной работы в данных пользователя
+    user_data["current_work"] = suitable_work
+    save_user_data(inter.guild.id, user_id, user_data)
+
+    # Отправка информации о предложенной работе пользователю
+    description = suitable_work["description"]
+    salary = suitable_work["salary"]
+    message_content = f"Вам предлагается работа: {name}\nОписание: {description}\nТип: {work_type}\nСложность: {difficulty}\nЗаработок: {salary}"
+    message_content += "\n\nПринять предложенную работу? (Да/Нет)"
+
+    # Отправка сообщения с предложением
+    message = await inter.response.send_message(message_content)
+
+    # Ожидание ответа от пользователя
+    try:
+        response = await bot.wait_for("message", timeout=30.0, check=lambda m: m.author == inter.author and m.channel == inter.channel)
+        response_content = response.content.lower()
+        if response_content == "Да":
+            await inter.response.send_message("Вы приняли предложенную работу.")
+        elif response_content == "Нет":
+            await inter.response.send_message("Вы отклонили предложенную работу.")
+        else:
+            await inter.response.send_message("Неверный ответ. Предложение отменено.")
+    except asyncio.TimeoutError:
+        await inter.response.send_message("Время ожидания истекло. Предложение отменено.")
+
+# Функция для проверки критериев пользователя
+def check_criteria(user_data, work_type, difficulty):
+    # В данном примере просто возвращаем True
+    return True
 
 @bot.slash_command(name='work', description="Работать")
 async def w_work_cmd(inter):
@@ -804,6 +880,41 @@ async def w_work_cmd(inter):
 
 @bot.slash_command(name='quit_work', description="Уволится с работы")
 async def q_work_cmd(inter):
+    # Загрузка данных пользователя
+    user_id = inter.author.id
+    user_data = load_user_data(inter.guild.id, user_id)
+
+    # Проверка, есть ли у пользователя предложенная работа
+    if "current_work" not in user_data:
+        await inter.response.send_message("У вас нет предложенной работы.")
+        return
+
+    # Получение информации о текущей работе пользователя
+    current_work = user_data["current_work"]
+    name = current_work["name"]
+
+    # Предложение пользователю уйти с работы
+    message_content = f"Хотите уволиться с работы '{name}'? (Да/Нет)"
+    message = await inter.response.send_message(message_content)
+
+    # Ожидание ответа от пользователя
+    try:
+        response = await bot.wait_for("message", timeout=30.0, check=lambda m: m.author == inter.author and m.channel == inter.channel)
+        response_content = response.content.lower()
+        if response_content == "Да":
+            # Удаление информации о текущей работе у пользователя
+            del user_data["current_work"]
+            save_user_data(inter.guild.id, user_id, user_data)
+            await inter.response.send_message("Вы уволились с работы.")
+        elif response_content == "Нет":
+            await inter.response.send_message("Отказ от работы отменён.")
+        else:
+            await inter.response.send_message("Неверный ответ. Отказ от работы отменён.")
+    except asyncio.TimeoutError:
+        await inter.response.send_message("Время ожидания истекло. Отказ от работы отменён.")
+
+@bot.slash_command(name='random_msg', description="Рандомное сообщение")
+async def rand_msg(inter):
     message = await randy_random()
     await inter.response.send_message(message)
 
