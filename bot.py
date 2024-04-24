@@ -792,8 +792,21 @@ async def update_businesses():
                         else:
                             print(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
 
+def load_works(server_id, user_id):
+    data_path = "works.json"
+    try:
+        if os.path.exists(data_path):
+            with open(data_path, "r", encoding="UTF-8") as f:
+                print("Работы были загружены")
+                return json.load(f)
+        else:
+            raise FileNotFoundError
+    except FileNotFoundError:
+        print("Отсутствуют работы, проверьте works.json")
+        return None
+
 @bot.slash_command(name='search_work', description="Поиск работы")
-async def s_work(inter):
+async def s_work_cmd(inter):
     # Загрузка данных пользователя
     user_id = inter.author.id
     user_data = load_user_data(inter.guild.id, user_id)
@@ -804,7 +817,7 @@ async def s_work(inter):
         return
 
     # Загрузка данных о работах
-    works_data = load_works("works.json")
+    works_data = load_works()
 
     # Поиск подходящей работы для пользователя
     suitable_work = None
