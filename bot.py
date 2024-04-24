@@ -223,7 +223,7 @@ async def steal_cmd(inter):
             return
     last_steal_time[user_id] = current_time
     bot.last_steal_time[server_id] = last_steal_time
-    if random.random() < 0.5:  # Шанс 5%
+    if random.random() < 0.5:  # Шанс 50%
         stolen_amount = random.randint(40, 334)
         with open("steal_message.txt", "r", encoding="utf-8") as file:
             messages = file.readlines()
@@ -302,7 +302,7 @@ def generate_crypto_prices():
         change1 = random.uniform(-1.9, -0.1)
         change2 = random.uniform(0.1, 1.9)
         change_percent = random.uniform(change1, change2)  # Изменение на случайный процент от -1% до 1%
-        if random.random() < 0.07:  # Шанс 7% на редкое изменение
+        if random.random() < 0.05:  # Шанс 5% на редкое изменение
             change1 = random.uniform(0.6, 0.9)
             change2 = random.uniform(1.01, 1.3)
             change_percent *= random.uniform(change1, change2)  # Редкое изменение от -20% до 20%
@@ -601,7 +601,7 @@ async def user_info_cmd(inter, user: disnake.User = None):
     work_str = ""
     if "current_work" in user_data:
         current_work = user_data["current_work"]["name"]
-        work_str = f"**Ваша текущая работа: {current_work}**"
+        work_str = f"**Ваша текущая работа:** {current_work}"
     crypto_str = ""
     for currency, data in CRYPTO_LIST.items():
         amount = crypto_wallet.get(currency, 0)
