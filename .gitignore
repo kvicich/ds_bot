@@ -4,3 +4,4 @@ crypto_prices.json
 __pycache__/
 Owner.json
 Testers.json
+actual_works.json
