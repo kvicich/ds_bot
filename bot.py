@@ -793,19 +793,114 @@ async def update_businesses():
                             print(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
 
 @bot.slash_command(name='search_work', description="Поиск работы")
-async def s_work_cmd(inter):
-    message = await randy_random()
-    await inter.response.send_message(message)
+async def s_work(inter):
+    # Загрузка данных пользователя
+    user_id = inter.author.id
+    user_data = load_user_data(inter.guild.id, user_id)
+
+    # Проверка, была ли уже предложена работа пользователю
+    if "current_work" in user_data:
+        await inter.response.send_message("У вас уже есть работа. Увольтесь с этой работы, прежде чем искать новую.")
+        return
+
+    # Загрузка данных о работах
+    works_data = load_works("works.json")
+
+    # Поиск подходящей работы для пользователя
+    suitable_work = None
+    while not suitable_work:
+        # Выбор случайной работы из загруженных данных
+        random_work = random.choice(works_data)
+        name = random_work["name"]
+        work_type = random_work["type"]
+        difficulty = random_work["difficulty"]
+
+        # Проверка критериев пользователя
+        if check_criteria(user_data, work_type, difficulty):
+            suitable_work = random_work
+
+    # Сохранение предложенной работы в данных пользователя
+    user_data["current_work"] = suitable_work
+    save_user_data(inter.guild.id, user_id, user_data)
+
+    # Отправка информации о предложенной работе пользователю
+    description = suitable_work["description"]
+    salary = suitable_work["salary"]
+    message_content = f"Вам предлагается работа: {name}\nОписание: {description}\nТип: {work_type}\nСложность: {difficulty}\nЗаработок: {salary}"
+    message_content += "\n\nПринять предложенную работу? (Нажмите 👍 чтобы принять, 👎 чтобы отклонить)"
+
+    # Отправка сообщения с предложением
+    message = await inter.response.send_message(message_content)
+
+    # Ожидание реакции от пользователя
+    await message.add_reaction("👍")
+    await message.add_reaction("👎")
+
+    # Функция для проверки реакции пользователя
+    def check_reaction(reaction, user):
+        return user == inter.author and str(reaction.emoji) in ["👍", "👎"]
+
+    try:
+        reaction, _ = await bot.wait_for("reaction_add", timeout=30.0, check=check_reaction)
+        if str(reaction.emoji) == "👍":
+            await inter.followup.send(content="Пожалуйста, не закрывайте модальное окно! 👍", ephemeral=True)
+        elif str(reaction.emoji) == "👎":
+            await inter.response.send_message("Вы отклонили предложенную работу. 👎")
+        else:
+            await inter.response.send_message("Неверная реакция. Предложение отменено.")
+    except asyncio.TimeoutError:
+        await inter.response.send_message("Время ожидания истекло. Предложение отменено.")
+
+# Функция для проверки критериев пользователя
+def check_criteria(user_data, work_type, difficulty):
+    # В данном примере просто возвращаем True
+    return True
 
 @bot.slash_command(name='work', description="Работать")
-async def s_work_cmd(inter):
+async def w_work_cmd(inter):
     message = await randy_random()
     await inter.response.send_message(message)
 
 @bot.slash_command(name='quit_work', description="Уволится с работы")
-async def s_work_cmd(inter):
-    message = await randy_random()
-    await inter.response.send_message(message)
+async def q_work_cmd(inter):
+    # Загрузка данных пользователя
+    user_id = inter.author.id
+    user_data = load_user_data(inter.guild.id, user_id)
+
+    # Проверка, есть ли у пользователя предложенная работа
+    if "current_work" not in user_data:
+        await inter.response.send_message("У вас нет предложенной работы.")
+        return
+
+    # Получение информации о текущей работе пользователя
+    current_work = user_data["current_work"]
+    name = current_work["name"]
+
+    # Предложение пользователю уйти с работы
+    message_content = f"Хотите уволиться с работы '{name}'? (Нажмите 👍 чтобы подтвердить, 👎 чтобы отклонить)"
+    message = await inter.response.send_message(message_content)
+
+    # Ожидание реакции от пользователя
+    await message.add_reaction("👍")
+    await message.add_reaction("👎")
+
+    # Функция для проверки реакции пользователя
+    def check_reaction(reaction, user):
+        return user == inter.author and str(reaction.emoji) in ["👍", "👎"]
+
+    try:
+        reaction, _ = await bot.wait_for("reaction_add", timeout=30.0, check=check_reaction)
+        if str(reaction.emoji) == "👍":
+            # Удаление информации о текущей работе у пользователя
+            del user_data["current_work"]
+            save_user_data(inter.guild.id, user_id, user_data)
+            await inter.response.send_message("Вы уволились с работы. 👍")
+        elif str(reaction.emoji) == "👎":
+            await inter.response.send_message("Отказ от работы отменён. 👎")
+        else:
+            await inter.response.send_message("Неверная реакция. Отказ от работы отменён.")
+    except asyncio.TimeoutError:
+        await inter.response.send_message("Время ожидания истекло. Отказ от работы отменён. 👎")
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
