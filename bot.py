@@ -597,7 +597,11 @@ async def user_info_cmd(inter, user: disnake.User = None):
     balance = user_data.get("money", 0)
     crypto_wallet = {key: value for key, value in user_data.items() if key in CRYPTO_LIST}
     
-    balance_str = f'**Баланс:** {balance} :coin:\n\n'
+    balance_str = f'**Баланс:** {balance} :coin:'
+    work_str = ""
+    if "current_work" in user_data:
+        current_work = user_data["current_work"]["name"]
+        work_str = f"**Ваша текущая работа:** {current_work}"
     crypto_str = ""
     for currency, data in CRYPTO_LIST.items():
         amount = crypto_wallet.get(currency, 0)
@@ -615,7 +619,7 @@ async def user_info_cmd(inter, user: disnake.User = None):
         for business, count in user_data["business"].items():
             business_info += f"{business}: {count}\n"
     
-    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}\n{crypto_str}\n{miners_info}\n{business_info}')
+    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}\n{work_str}\n\n{crypto_str}\n{miners_info}\n{business_info}')
 
 # Загружаем данные майнеров
 def load_miners_data():
@@ -792,13 +796,14 @@ async def update_businesses():
                         else:
                             print(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
 
-def load_works(server_id, user_id):
+def load_works():
     data_path = "works.json"
     try:
         if os.path.exists(data_path):
             with open(data_path, "r", encoding="UTF-8") as f:
+                works_data = json.load(f)
                 print("Работы были загружены")
-                return json.load(f)
+                return works_data["works"]
         else:
             raise FileNotFoundError
     except FileNotFoundError:
@@ -809,6 +814,7 @@ def load_works(server_id, user_id):
 async def s_work_cmd(inter):
     # Загрузка данных пользователя
     user_id = inter.author.id
+    guild_id = inter.guild.id
     user_data = load_user_data(inter.guild.id, user_id)
 
     # Проверка, была ли уже предложена работа пользователю
@@ -846,18 +852,18 @@ async def s_work_cmd(inter):
     message = await inter.response.send_message(message_content)
 
     # Ожидание реакции от пользователя
-    await message.add_reaction("👍")
-    await message.add_reaction("👎")
+    await message.add_reaction(":thumbsup:")
+    await message.add_reaction(":thumbsdown:")
 
     # Функция для проверки реакции пользователя
     def check_reaction(reaction, user):
-        return user == inter.author and str(reaction.emoji) in ["👍", "👎"]
+        return user == inter.author and str(reaction.emoji) in [":thumbsup:", ":thumbsdown:"]
 
     try:
         reaction, _ = await bot.wait_for("reaction_add", timeout=30.0, check=check_reaction)
-        if str(reaction.emoji) == "👍":
-            await inter.followup.send(content="Пожалуйста, не закрывайте модальное окно! 👍", ephemeral=True)
-        elif str(reaction.emoji) == "👎":
+        if str(reaction.emoji) == ":thumbsup:":
+            await inter.response.send_message("Вы приняли предложенную работу. :thumbsup:")
+        elif str(reaction.emoji) == ":thumbsdown:":
             await inter.response.send_message("Вы отклонили предложенную работу. 👎")
         else:
             await inter.response.send_message("Неверная реакция. Предложение отменено.")
@@ -887,6 +893,12 @@ async def q_work_cmd(inter):
 
     # Получение информации о текущей работе пользователя
     current_work = user_data["current_work"]
+
+    # Проверка наличия ключа "name"
+    if "name" not in current_work:
+        await inter.response.send_message("Произошла ошибка при получении информации о работе. Попробуйте ещё раз.")
+        return
+
     name = current_work["name"]
 
     # Предложение пользователю уйти с работы
