@@ -597,7 +597,11 @@ async def user_info_cmd(inter, user: disnake.User = None):
     balance = user_data.get("money", 0)
     crypto_wallet = {key: value for key, value in user_data.items() if key in CRYPTO_LIST}
     
-    balance_str = f'**Баланс:** {balance} :coin:\n\n'
+    balance_str = f'**Баланс:** {balance} :coin:'
+    work_str = ""
+    if "current_work" in user_data:
+        current_work = user_data["current_work"]["name"]
+        work_str = f"**Ваша текущая работа: {current_work}**"
     crypto_str = ""
     for currency, data in CRYPTO_LIST.items():
         amount = crypto_wallet.get(currency, 0)
@@ -615,7 +619,7 @@ async def user_info_cmd(inter, user: disnake.User = None):
         for business, count in user_data["business"].items():
             business_info += f"{business}: {count}\n"
     
-    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}\n{crypto_str}\n{miners_info}\n{business_info}')
+    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}\n{work_str}\n\n{crypto_str}\n{miners_info}\n{business_info}')
 
 # Загружаем данные майнеров
 def load_miners_data():
@@ -823,7 +827,7 @@ async def s_work(inter):
 
     # Проверка, была ли уже предложена работа пользователю
     if "current_work" in user_data:
-        await inter.response.send_message("У вас уже есть предложенная работа. Завершите текущую работу, прежде чем искать новую.")
+        await inter.response.send_message("У вас уже есть работа. Увольтесь с этой работы, прежде чем искать новую.")
         return
 
     # Загрузка данных о работах
@@ -860,7 +864,7 @@ async def s_work(inter):
         response = await bot.wait_for("message", timeout=30.0, check=lambda m: m.author == inter.author and m.channel == inter.channel)
         response_content = response.content.lower()
         if response_content == "Да":
-            await inter.response.send_message("Вы приняли предложенную работу.")
+            await inter.followup.send(content="Пожалуйста, не закрывайте модальное окно! +", ephemeral=True)
         elif response_content == "Нет":
             await inter.response.send_message("Вы отклонили предложенную работу.")
         else:
@@ -909,7 +913,8 @@ async def q_work_cmd(inter):
         elif response_content == "Нет":
             await inter.response.send_message("Отказ от работы отменён.")
         else:
-            await inter.response.send_message("Неверный ответ. Отказ от работы отменён.")
+            print(response_content)
+            # await inter.response.send_message("Неверный ответ. Отказ от работы отменён.")
     except asyncio.TimeoutError:
         await inter.response.send_message("Время ожидания истекло. Отказ от работы отменён.")
 
