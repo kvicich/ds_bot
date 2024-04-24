@@ -1,0 +1,25 @@
+{
+    "works": [
+      {
+        "name": "Математик (лёгкий)",
+        "description": "Самые лёгкие примеры",
+        "type": "mathematics",
+        "difficulty": "1",
+        "salary": "100-300"
+      },
+      {
+        "name": "Математик (средний)",
+        "description": "Примеры посложнее, но ещё решаемое",
+        "type": "mathematics",
+        "difficulty": "2",
+        "salary": "150-450"
+      },
+      {
+        "name": "Математик (сложный)",
+        "description": "Настоящий ад, сочуствуем вам",
+        "type": "mathematics",
+        "difficulty": "3",
+        "salary": "450-1000"
+      }
+    ]
+  }
