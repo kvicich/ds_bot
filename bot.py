@@ -810,12 +810,24 @@ def load_works():
         print("Отсутствуют работы, проверьте works.json")
         return None
 
+<<<<<<< Updated upstream
 @bot.slash_command(name='search_work', description="Поиск работы")
 async def s_work_cmd(inter):
     # Загрузка данных пользователя
     user_id = inter.author.id
     guild_id = inter.guild.id
     user_data = load_user_data(inter.guild.id, user_id)
+=======
+        # Проверяем ответ пользователя
+        if abs(user_answer - correct_answer) < 0.01:  # Учитываем погрешность из-за операций с плавающей точкой
+            # Определяем количество монет в зависимости от сложности примера
+            if difficulty == 'easy':
+                reward = 30
+            elif difficulty == 'medium':
+                reward = 45
+            else:
+                reward = 70
+>>>>>>> Stashed changes
 
     # Проверка, была ли уже предложена работа пользователю
     if "current_work" in user_data:
