@@ -7,3 +7,4 @@ fix_me_please - 120 =+ money
 discord - 2.5 =+ bananacoin
 wumpus - 0.05 =+ ethereum
 business_man - 0.09 =+ ethereum
+worker - 2.94865 =+ bananacoin

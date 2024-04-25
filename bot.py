@@ -43,7 +43,7 @@ def load_user_data(server_id, user_id):
     else:
         with open(data_path, "w") as f:
             json.dump({}, f)
-            print("Была загружена дата пользователей")
+            print("Загружена дата пользователя")
         return {}
 
 # Эта штука вообще всё за раз грузит, будем использовать
@@ -59,6 +59,7 @@ def load_all_user_data():
                     user_data = load_user_data(int(server_id), user_id)
                     server_users_data[user_id] = user_data
             all_user_data[server_id] = server_users_data
+    print("Загружена дата всех пользователей")
     return all_user_data
 
 # А вот эта штучка сохраняет дату юзеров
@@ -67,7 +68,7 @@ def save_user_data(server_id, user_id, data):
     data_path = user_data_path(server_id, user_id)
     with open(data_path, "w", encoding="UTF-8") as f:
         json.dump(data, f)
-        print("Была сохранена дата пользователей")
+        print("Сохранена дата пользователя")
 
 # Вычисляет точное местоположение личного файла юзера
 def user_data_path(server_id, user_id):
@@ -222,7 +223,7 @@ async def steal_cmd(inter):
             return
     last_steal_time[user_id] = current_time
     bot.last_steal_time[server_id] = last_steal_time
-    if random.random() < 0.4567:  # Шанс 45,67%
+    if random.random() < 0.5:  # Шанс 50%
         stolen_amount = random.randint(40, 334)
         with open("steal_message.txt", "r", encoding="utf-8") as file:
             messages = file.readlines()
@@ -251,8 +252,7 @@ async def ping(inter):
     end_time = time.time()
     ping_time = round((end_time - start_time) * 1000)
     await inter.edit_original_message(content=f"Понг!\n"
-                                      f"Ваш пинг: {ping_time} мс"
-    )
+                                      f"Ваш пинг: {ping_time} мс")
 
 # Команда для добавления администратора
 @bot.slash_command(name='add_admin', description="Добавляет администратора на сервере.")
@@ -290,10 +290,10 @@ async def rem_admin(ctx, member: disnake.Member):
 
 # Команда для просмотра текущих курсов криптовалют
 @bot.slash_command(name='crypto_prices', description='Просмотреть текущие курсы криптовалют.')
-async def crypto_prices_cmd(ctx):
+async def crypto_prices_cmd(inter):
     crypto_list = load_crypto_prices()
     prices_str = '\n'.join([f"{crypto_list[currency]['emoji']} {currency.capitalize()}: {crypto_list[currency]['price']} :coin:" for currency in crypto_list])
-    await ctx.send(f"Текущие курсы криптовалют:\n{prices_str}")
+    await inter.response.send_message(f"Текущие курсы криптовалют:\n{prices_str}")
 
 # Функция для генерации новых цен криптовалют
 def generate_crypto_prices():
@@ -349,7 +349,7 @@ async def change_crypto_prices(inter):
 @bot.slash_command(name='give_money', description="Выдает деньги пользователю.")
 async def give_money(inter, member: disnake.Member, amount: int):
     # Загрузка данных пользователя
-    user_id = str(inter.author.id)
+    user_id = str(member.id)
     server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
 
@@ -395,7 +395,7 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
         return
 
     # Загрузка данных пользователя
-    user_id = str(inter.author.id)
+    user_id = str(member.id)
     server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
 
@@ -445,16 +445,16 @@ def load_promo_codes():
     return codes
 
 @bot.slash_command(name="promo", description='Позволяет ввести промокод.')
-async def promo(ctx, code: str):
-    server_id = str(ctx.guild.id)
-    user_id = str(ctx.author.id)
+async def promo(inter, code: str):
+    server_id = str(inter.guild.id)
+    user_id = str(inter.author.id)
     user_data = load_user_data(server_id, user_id)
     used_promocodes = user_data.get('used_promocodes', [])
     promo_codes = load_promo_codes()  
 
     # Проверка на использование промокода
     if code in used_promocodes:
-        await ctx.send("Промокод уже использован.")
+        await inter.response.send_message("Промокод уже использован.")
         return
 
     if code in promo_codes:
@@ -462,42 +462,42 @@ async def promo(ctx, code: str):
         try:
             value, key = action.split(' =+ ')
         except ValueError:
-            await ctx.send("Неправильный формат действия промокода.")
+            await inter.response.send_message("Неправильный формат действия промокода.")
             return
 
         if key == 'money':
             user_data['money'] = user_data.get('money', 0) + float(value)
-            await ctx.send(f"Вы получили {value} денег.")
+            await inter.response.send_message(f"Вы получили {value} денег.")
         elif key in ['bitcoin', 'ethereum', 'bananacoin']:
             user_data[key] = user_data.get(key, 0) + float(value)
-            await ctx.send(f"Вы получили {value} {key}.")
+            await inter.response.send_message(f"Вы получили {value} {key}.")
         else:
-            await ctx.send("Произошла ошибка при обработке промокода.")
+            await inter.response.send_message("Произошла ошибка при обработке промокода.")
 
         used_promocodes.append(code)
         user_data['used_promocodes'] = used_promocodes
     else:
-        await ctx.send("Промокод не найден.")
+        await inter.response.send_message("Промокод не найден.")
     save_user_data(server_id, user_id, user_data)
     
 @bot.slash_command(name="exchange", description='Позволяет обменивать валюты')
-async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: float):
+async def exchange_cmd(inter, source_currency: str, target_currency: str, amount: float):
     # Проверяем, что валюты из списка доступных
     if source_currency.lower() not in CRYPTO_LIST and source_currency.lower() != "money":
-        await ctx.send(f"Валюта {source_currency} не найдена в списке доступных криптовалют и денег.")
+        await inter.response.send_message(f"Валюта {source_currency} не найдена в списке доступных криптовалют и денег.")
         return
     if target_currency.lower() not in CRYPTO_LIST and target_currency.lower() != "money":
-        await ctx.send(f"Валюта {target_currency} не найдена в списке доступных криптовалют и денег.")
+        await inter.response.send_message(f"Валюта {target_currency} не найдена в списке доступных криптовалют и денег.")
         return
 
     # Обрабатываем случай обмена денег на криптовалюту
     if source_currency.lower() == "money":
         # Проверяем, что пользователь имеет достаточно денег для обмена
-        user_id = str(ctx.author.id)
-        server_id = str(ctx.guild.id)
+        user_id = str(inter.author.id)
+        server_id = str(inter.guild.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get("money", 0) < amount:
-            await ctx.send("У вас недостаточно денег для обмена.")
+            await inter.response.send_message("У вас недостаточно денег для обмена.")
             return
 
         # Вычисляем сумму после обмена
@@ -510,7 +510,7 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_rounded_amount
 
         # Сообщаем пользователю об успешном обмене
-        await ctx.send(f"Вы успешно обменяли {amount} денег на {exchanged_rounded_amount} {target_currency}.")
+        await inter.response.send_message(f"Вы успешно обменяли {amount} денег на {exchanged_rounded_amount} {target_currency}.")
 
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
@@ -518,11 +518,11 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
     # Обрабатываем случай обмена криптовалюты на деньги
     elif target_currency.lower() == "money":
         # Проверяем, что пользователь имеет достаточно криптовалюты для обмена
-        user_id = str(ctx.author.id)
-        server_id = str(ctx.guild.id)
+        user_id = str(inter.author.id)
+        server_id = str(inter.guild.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get(source_currency.lower(), 0) < amount:
-            await ctx.send(f"У вас недостаточно {source_currency} для обмена.")
+            await inter.response.send_message(f"У вас недостаточно {source_currency} для обмена.")
             return
 
         # Вычисляем сумму после обмена
@@ -535,7 +535,7 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         user_data[source_currency.lower()] -= amount
 
         # Сообщаем пользователю об успешном обмене
-        await ctx.send(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} денег.")
+        await inter.response.send_message(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} денег.")
 
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
@@ -547,11 +547,11 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         target_rate = CRYPTO_LIST[target_currency.lower()]["price"]
 
         # Проверяем, что пользователь имеет достаточно криптовалюты для обмена
-        user_id = str(ctx.author.id)
-        server_id = str(ctx.guild.id)
+        user_id = str(inter.author.id)
+        server_id = str(inter.guild.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get(source_currency.lower(), 0) < amount:
-            await ctx.send(f"У вас недостаточно {source_currency} для обмена.")
+            await inter.response.send_message(f"У вас недостаточно {source_currency} для обмена.")
             return
 
         # Выполняем обмен
@@ -561,7 +561,7 @@ async def exchange_cmd(ctx, source_currency: str, target_currency: str, amount: 
         user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_rounded_amount
 
         # Сообщаем пользователю об успешном обмене
-        await ctx.send(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} {target_currency}.")
+        await inter.response.send_message(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} {target_currency}.")
 
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
@@ -628,7 +628,7 @@ def load_miners_data():
 
 # Функция для получения информации о майнерах
 def get_miners_info(miners_data):
-    return "\n".join([f"{miner}: Цена - {miners_data[miner]['price']} :coin:, Хэшрейт - {miners_data[miner]['hashrate']}, Потребление - {miners_data[miner]['electricity_consumption']} в 5 минут, Поддерживаемые криптовалюты - {', '.join(miners_data[miner]['supported_cryptos'])}" for miner in miners_data])
+    return "\n".join([f"{miner}: Цена - {miners_data[miner]['price']} :coin:, Хэшрейт - {miners_data[miner]['hashrate']}, Потребление - {miners_data[miner]['electricity_consumption']} :coin: в 5 минут, Поддерживаемые криптовалюты - {', '.join(miners_data[miner]['supported_cryptos'])}" for miner in miners_data])
 
 # Функция для отправки длинного сообщения
 async def send_long_message(channel, message_content):
@@ -743,13 +743,13 @@ async def buy_business(inter, business: str):
 
 # Функция для получения информации о бизнесах
 def get_business_info(business_data, business):
-    return f"{business}: Цена - {business_data[business]['price']} :coin:, Доход - {business_data[business]['income']}, Потребление - {business_data[business]['consumption']} в 30 минут"
+    return f"{business}: Цена - {business_data[business]['price']} :coin:, Доход - {business_data[business]['income']}, Потребление - {business_data[business]['consumption']} :coin: в 30 минут"
 
 # Слеш-команда для просмотра информации о бизнесах
 @bot.slash_command(name='business_info', description="Просмотр информации о доступных бизнесах")
 async def business_info(inter):
     business_data = load_business_data()
-    business_info = "Доступные майнеры:\n"
+    business_info = "Доступные бизнесы:\n"
     for business in business_data:
         business_info += get_business_info(business_data, business) + "\n"
     await send_long_message(inter.channel, business_info)
@@ -809,12 +809,33 @@ def load_works():
     except FileNotFoundError:
         print("Отсутствуют работы, проверьте works.json")
         return None
+    
+# Функция для загрузки данных о работах из файла
+def load_works(filename):
+    with open(filename, "r", encoding="utf-8") as file:
+        works_data = json.load(file)
+    return works_data["works"]
+
+# Команда для отображения информации о доступных работах
+@bot.slash_command(name='works_info', description="Просмотр информации о доступных работах")
+async def works_info(inter):
+    # Загрузка данных о работах из файла
+    works_data = load_works("works.json")
+
+    works_description = "Список доступных работ:\n"
+    for work in works_data:
+        name = work["name"]
+        description = work["description"]
+        work_type = work["type"]
+        difficulty = work["difficulty"]
+        salary = work["salary"]
+        works_description += f"Название: {name}\nОписание: {description}\nТип: {work_type}\nСложность: {difficulty}\nЗаработок: {salary}\n\n"
+
+    await send_long_message(inter.channel, works_description)
 
 @bot.slash_command(name='search_work', description="Поиск работы")
-async def s_work_cmd(inter):
+async def s_work(inter):
     # Загрузка данных пользователя
-    user_id = inter.author.id
-    guild_id = inter.guild.id
     user_data = load_user_data(inter.guild.id, user_id)
 
     # Проверка, была ли уже предложена работа пользователю
@@ -823,7 +844,8 @@ async def s_work_cmd(inter):
         return
 
     # Загрузка данных о работах
-    works_data = load_works()
+    works_data = load_works("works.json")
+
 
     # Поиск подходящей работы для пользователя
     suitable_work = None
@@ -867,6 +889,16 @@ async def s_work_cmd(inter):
             await inter.response.send_message("Вы отклонили предложенную работу. 👎")
         else:
             await inter.response.send_message("Неверная реакция. Предложение отменено.")
+    # Ожидание ответа от пользователя
+    try:
+        response = await bot.wait_for("message", timeout=30.0, check=lambda m: m.author == inter.author and m.channel == inter.channel)
+        response_content = response.content.lower()
+        if response_content == "Да":
+            await inter.followup.send(content="Пожалуйста, не закрывайте модальное окно! +", ephemeral=True)
+        elif response_content == "Нет":
+            await inter.response.send_message("Вы отклонили предложенную работу.")
+        else:
+            await inter.response.send_message("Неверный ответ. Предложение отменено.")
     except asyncio.TimeoutError:
         await inter.response.send_message("Время ожидания истекло. Предложение отменено.")
 
@@ -926,6 +958,33 @@ async def q_work_cmd(inter):
             await inter.response.send_message("Неверная реакция. Отказ от работы отменён.")
     except asyncio.TimeoutError:
         await inter.response.send_message("Время ожидания истекло. Отказ от работы отменён. 👎")
+    name = current_work["name"]
+
+    # Предложение пользователю уйти с работы
+    message_content = f"Хотите уволиться с работы '{name}'? (Да/Нет)"
+    message = await inter.response.send_message(message_content)
+
+    # Ожидание ответа от пользователя
+    try:
+        response = await bot.wait_for("message", timeout=30.0, check=lambda m: m.author == inter.author and m.channel == inter.channel)
+        response_content = response.content.lower()
+        if response_content == "Да":
+            # Удаление информации о текущей работе у пользователя
+            del user_data["current_work"]
+            save_user_data(inter.guild.id, user_id, user_data)
+            await inter.response.send_message("Вы уволились с работы.")
+        elif response_content == "Нет":
+            await inter.response.send_message("Отказ от работы отменён.")
+        else:
+            print(response_content)
+            # await inter.response.send_message("Неверный ответ. Отказ от работы отменён.")
+    except asyncio.TimeoutError:
+        await inter.response.send_message("Время ожидания истекло. Отказ от работы отменён.")
+
+@bot.slash_command(name='random_msg', description="Рандомное сообщение")
+async def rand_msg(inter):
+    message = await randy_random()
+    await inter.response.send_message(message)
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
