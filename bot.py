@@ -173,6 +173,40 @@ async def rem_tester(ctx, member: disnake.User):
     else:
         await ctx.send("На сервере нет тестеров.")
 
+# Команда для добавления администратора
+@owner_command
+@bot.slash_command(name='add_admin', description="Добавляет администратора на сервере.")
+async def add_admin(ctx, member: disnake.Member):
+    admin_data_path = os.path.join("admins.json")
+    if os.path.exists(admin_data_path):
+        with open(admin_data_path, "r") as file:
+            admins = json.load(file)
+    else:
+        admins = []
+    admins.append(member.id)
+    with open(admin_data_path, "w") as file:
+        json.dump(admins, file)
+
+    await ctx.send(f"{member.mention} добавлен в список администраторов.")
+
+# Команда для удаления администратора
+@owner_command
+@bot.slash_command(name='rem_admin', description="Удаляет администратора с сервера.")
+async def rem_admin(ctx, member: disnake.Member):
+    admin_data_path = os.path.join("admins.json")
+    if os.path.exists(admin_data_path):
+        with open(admin_data_path, "r") as file:
+            admins = json.load(file)
+        if member.id in admins:
+            admins.remove(member.id)
+            with open(admin_data_path, "w") as file:
+                json.dump(admins, file)
+            await ctx.send(f"{member.mention} удален из списка администраторов.")
+        else:
+            await ctx.send(f"{member.mention} не является администратором.")
+    else:
+        await ctx.send("На сервере нет администраторов.")
+
 # Событие выполняющееся после полного запуска бота
 @bot.event
 async def on_ready():
@@ -254,40 +288,6 @@ async def ping(inter):
     await inter.edit_original_message(content=f"Понг!\n"
                                       f"Ваш пинг: {ping_time} мс")
 
-# Команда для добавления администратора
-@bot.slash_command(name='add_admin', description="Добавляет администратора на сервере.")
-@owner_command
-async def add_admin(ctx, member: disnake.Member):
-    admin_data_path = os.path.join("admins.json")
-    if os.path.exists(admin_data_path):
-        with open(admin_data_path, "r") as file:
-            admins = json.load(file)
-    else:
-        admins = []
-    admins.append(member.id)
-    with open(admin_data_path, "w") as file:
-        json.dump(admins, file)
-
-    await ctx.send(f"{member.mention} добавлен в список администраторов.")
-
-# Команда для удаления администратора
-@bot.slash_command(name='rem_admin', description="Удаляет администратора с сервера.")
-@owner_command
-async def rem_admin(ctx, member: disnake.Member):
-    admin_data_path = os.path.join("admins.json")
-    if os.path.exists(admin_data_path):
-        with open(admin_data_path, "r") as file:
-            admins = json.load(file)
-        if member.id in admins:
-            admins.remove(member.id)
-            with open(admin_data_path, "w") as file:
-                json.dump(admins, file)
-            await ctx.send(f"{member.mention} удален из списка администраторов.")
-        else:
-            await ctx.send(f"{member.mention} не является администратором.")
-    else:
-        await ctx.send("На сервере нет администраторов.")
-
 # Команда для просмотра текущих курсов криптовалют
 @bot.slash_command(name='crypto_prices', description='Просмотреть текущие курсы криптовалют.')
 async def crypto_prices_cmd(inter):
@@ -302,7 +302,7 @@ def generate_crypto_prices():
         change1 = random.uniform(-1.9, -0.1)
         change2 = random.uniform(0.1, 1.9)
         change_percent = random.uniform(change1, change2)  # Изменение на случайный процент от -1% до 1%
-        if random.random() < 0.05:  # Шанс 5% на редкое изменение
+        if random.random() < 0.07:  # Шанс 7% на редкое изменение
             change1 = random.uniform(0.6, 0.9)
             change2 = random.uniform(1.01, 1.3)
             change_percent *= random.uniform(change1, change2)  # Редкое изменение от -20% до 20%
@@ -833,7 +833,7 @@ async def work_cmd(inter):
         
         # Проверяем, что пользователь отправил не пустое сообщение
         if user_answer.content.strip() == "":
-            await inter.followup.send("Вы не отправили ответ. Попробуйте снова.", ephemeral=True)
+            await inter.followup.send("Ваше сообщение пустое, попробуйте снова.", ephemeral=True)
             return
 
         # Проверяем операцию и преобразуем ответ пользователя в число, если это не деление
