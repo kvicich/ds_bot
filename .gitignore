@@ -4,9 +4,6 @@ crypto_prices.json
 __pycache__/
 Owner.json
 Testers.json
-<<<<<<< Updated upstream
-=======
 servers_data
 crypto_prices.json
 admins.json
->>>>>>> Stashed changes
