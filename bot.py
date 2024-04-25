@@ -598,10 +598,6 @@ async def user_info_cmd(inter, user: disnake.User = None):
     crypto_wallet = {key: value for key, value in user_data.items() if key in CRYPTO_LIST}
     
     balance_str = f'**Баланс:** {balance} :coin:'
-    work_str = ""
-    if "current_work" in user_data:
-        current_work = user_data["current_work"]["name"]
-        work_str = f"**Ваша текущая работа:** {current_work}"
     crypto_str = ""
     for currency, data in CRYPTO_LIST.items():
         amount = crypto_wallet.get(currency, 0)
@@ -619,7 +615,7 @@ async def user_info_cmd(inter, user: disnake.User = None):
         for business, count in user_data["business"].items():
             business_info += f"{business}: {count}\n"
     
-    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}\n{work_str}\n\n{crypto_str}\n{miners_info}\n{business_info}')
+    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}\n\n{crypto_str}\n{miners_info}\n{business_info}')
 
 # Загружаем данные майнеров
 def load_miners_data():
@@ -796,6 +792,7 @@ async def update_businesses():
                         else:
                             print(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
 
+<<<<<<< Updated upstream
 def load_works():
     data_path = "works.json"
     try:
@@ -907,56 +904,78 @@ def check_criteria(user_data, work_type, difficulty):
     # В данном примере просто возвращаем True
     return True
 
+=======
+>>>>>>> Stashed changes
 @bot.slash_command(name='work', description="Работать")
-async def w_work_cmd(inter):
-    message = await randy_random()
-    await inter.response.send_message(message)
+async def work_cmd(inter):
+    # Выбираем случайную сложность примера
+    difficulty = random.choice(['easy', 'medium', 'hard'])
 
-@bot.slash_command(name='quit_work', description="Уволится с работы")
-async def q_work_cmd(inter):
-    # Загрузка данных пользователя
-    user_id = inter.author.id
-    user_data = load_user_data(inter.guild.id, user_id)
+    # Генерируем пример в зависимости от сложности
+    if difficulty == 'easy':
+        num1 = random.randint(3, 15)
+        num2 = random.randint(3, 15)
+    elif difficulty == 'medium':
+        num1 = random.randint(10, 80)
+        num2 = random.randint(10, 80)
+    else:
+        num1 = random.randint(80, 200)
+        num2 = random.randint(80, 200)
 
-    # Проверка, есть ли у пользователя предложенная работа
-    if "current_work" not in user_data:
-        await inter.response.send_message("У вас нет предложенной работы.")
-        return
+    # Выбираем случайный знак операции
+    operation = random.choice(['+', '-', '*', '/'])
 
-    # Получение информации о текущей работе пользователя
-    current_work = user_data["current_work"]
+    # Вычисляем правильный ответ
+    if operation == '+':
+        correct_answer = num1 + num2
+    elif operation == '-':
+        correct_answer = num1 - num2
+    elif operation == '*':
+        correct_answer = num1 * num2
+    else:
+        # Проверка деления на 0
+        if num2 == 0:
+            num2 = 1
+        correct_answer = num1 / num2
 
-    # Проверка наличия ключа "name"
-    if "name" not in current_work:
-        await inter.response.send_message("Произошла ошибка при получении информации о работе. Попробуйте ещё раз.")
-        return
+    # Отправляем пример пользователю
+    await inter.response.send_message(f'Решите пример: {num1} {operation} {num2}')
 
-    name = current_work["name"]
-
-    # Предложение пользователю уйти с работы
-    message_content = f"Хотите уволиться с работы '{name}'? (Нажмите 👍 чтобы подтвердить, 👎 чтобы отклонить)"
-    message = await inter.response.send_message(message_content)
-
-    # Ожидание реакции от пользователя
-    await message.add_reaction("👍")
-    await message.add_reaction("👎")
-
-    # Функция для проверки реакции пользователя
-    def check_reaction(reaction, user):
-        return user == inter.author and str(reaction.emoji) in ["👍", "👎"]
-
+    # Ожидаем ответ от пользователя
     try:
-        reaction, _ = await bot.wait_for("reaction_add", timeout=30.0, check=check_reaction)
-        if str(reaction.emoji) == "👍":
-            # Удаление информации о текущей работе у пользователя
-            del user_data["current_work"]
-            save_user_data(inter.guild.id, user_id, user_data)
-            await inter.response.send_message("Вы уволились с работы. 👍")
-        elif str(reaction.emoji) == "👎":
-            await inter.response.send_message("Отказ от работы отменён. 👎")
+        user_answer = await bot.wait_for('message', check=lambda message: message.author == inter.author and message.channel == inter.channel, timeout=10)
+        
+        # Проверяем, что пользователь отправил не пустое сообщение
+        if user_answer.content.strip() == "":
+            await inter.followup.send("Вы не отправили ответ. Попробуйте снова.", ephemeral=True)
+            return
+
+        # Проверяем операцию и преобразуем ответ пользователя в число, если это не деление
+        if operation != '/':
+            user_answer = float(user_answer.content)
         else:
-            await inter.response.send_message("Неверная реакция. Отказ от работы отменён.")
+            # Преобразуем ответ пользователя в число с плавающей точкой
+            user_answer = float(user_answer.content.replace(',', '.'))
+
+        # Проверяем ответ пользователя
+        if abs(user_answer - correct_answer) < 0.01:  # Учитываем погрешность из-за операций с плавающей точкой
+            # Определяем количество монет в зависимости от сложности примера
+            if difficulty == 'easy':
+                reward = 10
+            elif difficulty == 'medium':
+                reward = 20
+            else:
+                reward = 45
+
+            # Добавляем монеты пользователю
+            user_data = load_user_data(inter.guild.id, inter.author.id)
+            user_data['money'] = user_data.get('money', 0) + reward
+            save_user_data(inter.guild.id, inter.author.id, user_data)
+            await inter.followup.send(f'Верно! Вы получаете {reward} монет.', ephemeral=True)
+        else:
+            await inter.followup.send('Неверно. Попробуйте еще раз.', ephemeral=True)
     except asyncio.TimeoutError:
+<<<<<<< Updated upstream
         await inter.response.send_message("Время ожидания истекло. Отказ от работы отменён. 👎")
     name = current_work["name"]
 
@@ -985,6 +1004,9 @@ async def q_work_cmd(inter):
 async def rand_msg(inter):
     message = await randy_random()
     await inter.response.send_message(message)
+=======
+        await inter.followup.send('Время вышло. Попробуйте снова.', ephemeral=True)
+>>>>>>> Stashed changes
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
