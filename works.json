@@ -1,25 +1,25 @@
 {
     "works": [
       {
-        "name": "Математик (легкий)",
-        "description": "Решайте математические задачи на легком уровне сложности.",
-        "type": "Mathematics",
-        "difficulty": "easy",
-        "salary": "100-900 money"
+        "name": "Математик (лёгкий)",
+        "description": "Самые лёгкие примеры",
+        "type": "mathematics",
+        "difficulty": "1",
+        "salary": "100-300"
       },
       {
         "name": "Математик (средний)",
-        "description": "Решайте математические задачи на среднем уровне сложности.",
-        "type": "Mathematics",
-        "difficulty": "medium",
-        "salary": "100-900 money"
+        "description": "Примеры посложнее, но ещё решаемое",
+        "type": "mathematics",
+        "difficulty": "2",
+        "salary": "150-450"
       },
       {
         "name": "Математик (сложный)",
-        "description": "Решайте математические задачи на высоком уровне сложности.",
-        "type": "Mathematics",
-        "difficulty": "hard",
-        "salary": "100-900 money"
+        "description": "Настоящий ад, сочуствуем вам",
+        "type": "mathematics",
+        "difficulty": "3",
+        "salary": "450-1000"
       }
     ]
   }

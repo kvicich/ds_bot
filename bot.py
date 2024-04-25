@@ -796,6 +796,20 @@ async def update_businesses():
                         else:
                             print(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
 
+def load_works():
+    data_path = "works.json"
+    try:
+        if os.path.exists(data_path):
+            with open(data_path, "r", encoding="UTF-8") as f:
+                works_data = json.load(f)
+                print("Работы были загружены")
+                return works_data["works"]
+        else:
+            raise FileNotFoundError
+    except FileNotFoundError:
+        print("Отсутствуют работы, проверьте works.json")
+        return None
+    
 # Функция для загрузки данных о работах из файла
 def load_works(filename):
     with open(filename, "r", encoding="utf-8") as file:
@@ -822,7 +836,6 @@ async def works_info(inter):
 @bot.slash_command(name='search_work', description="Поиск работы")
 async def s_work(inter):
     # Загрузка данных пользователя
-    user_id = inter.author.id
     user_data = load_user_data(inter.guild.id, user_id)
 
     # Проверка, была ли уже предложена работа пользователю
@@ -832,6 +845,7 @@ async def s_work(inter):
 
     # Загрузка данных о работах
     works_data = load_works("works.json")
+
 
     # Поиск подходящей работы для пользователя
     suitable_work = None
@@ -854,11 +868,27 @@ async def s_work(inter):
     description = suitable_work["description"]
     salary = suitable_work["salary"]
     message_content = f"Вам предлагается работа: {name}\nОписание: {description}\nТип: {work_type}\nСложность: {difficulty}\nЗаработок: {salary}"
-    message_content += "\n\nПринять предложенную работу? (Да/Нет)"
+    message_content += "\n\nПринять предложенную работу? (Нажмите 👍 чтобы принять, 👎 чтобы отклонить)"
 
     # Отправка сообщения с предложением
     message = await inter.response.send_message(message_content)
 
+    # Ожидание реакции от пользователя
+    await message.add_reaction(":thumbsup:")
+    await message.add_reaction(":thumbsdown:")
+
+    # Функция для проверки реакции пользователя
+    def check_reaction(reaction, user):
+        return user == inter.author and str(reaction.emoji) in [":thumbsup:", ":thumbsdown:"]
+
+    try:
+        reaction, _ = await bot.wait_for("reaction_add", timeout=30.0, check=check_reaction)
+        if str(reaction.emoji) == ":thumbsup:":
+            await inter.response.send_message("Вы приняли предложенную работу. :thumbsup:")
+        elif str(reaction.emoji) == ":thumbsdown:":
+            await inter.response.send_message("Вы отклонили предложенную работу. 👎")
+        else:
+            await inter.response.send_message("Неверная реакция. Предложение отменено.")
     # Ожидание ответа от пользователя
     try:
         response = await bot.wait_for("message", timeout=30.0, check=lambda m: m.author == inter.author and m.channel == inter.channel)
@@ -895,6 +925,39 @@ async def q_work_cmd(inter):
 
     # Получение информации о текущей работе пользователя
     current_work = user_data["current_work"]
+
+    # Проверка наличия ключа "name"
+    if "name" not in current_work:
+        await inter.response.send_message("Произошла ошибка при получении информации о работе. Попробуйте ещё раз.")
+        return
+
+    name = current_work["name"]
+
+    # Предложение пользователю уйти с работы
+    message_content = f"Хотите уволиться с работы '{name}'? (Нажмите 👍 чтобы подтвердить, 👎 чтобы отклонить)"
+    message = await inter.response.send_message(message_content)
+
+    # Ожидание реакции от пользователя
+    await message.add_reaction("👍")
+    await message.add_reaction("👎")
+
+    # Функция для проверки реакции пользователя
+    def check_reaction(reaction, user):
+        return user == inter.author and str(reaction.emoji) in ["👍", "👎"]
+
+    try:
+        reaction, _ = await bot.wait_for("reaction_add", timeout=30.0, check=check_reaction)
+        if str(reaction.emoji) == "👍":
+            # Удаление информации о текущей работе у пользователя
+            del user_data["current_work"]
+            save_user_data(inter.guild.id, user_id, user_data)
+            await inter.response.send_message("Вы уволились с работы. 👍")
+        elif str(reaction.emoji) == "👎":
+            await inter.response.send_message("Отказ от работы отменён. 👎")
+        else:
+            await inter.response.send_message("Неверная реакция. Отказ от работы отменён.")
+    except asyncio.TimeoutError:
+        await inter.response.send_message("Время ожидания истекло. Отказ от работы отменён. 👎")
     name = current_work["name"]
 
     # Предложение пользователю уйти с работы
