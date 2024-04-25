@@ -847,19 +847,11 @@ async def work_cmd(inter):
         if abs(user_answer - correct_answer) < 0.01:  # Учитываем погрешность из-за операций с плавающей точкой
             # Определяем количество монет в зависимости от сложности примера
             if difficulty == 'easy':
-<<<<<<< HEAD
                 reward = 20
             elif difficulty == 'medium':
                 reward = 45
             else:
                 reward = 70
-=======
-                reward = 10
-            elif difficulty == 'medium':
-                reward = 20
-            else:
-                reward = 45
->>>>>>> main
 
             # Добавляем монеты пользователю
             user_data = load_user_data(inter.guild.id, inter.author.id)
