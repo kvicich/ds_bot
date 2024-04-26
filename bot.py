@@ -805,11 +805,14 @@ async def work_cmd(inter):
         num1 = random.randint(10, 80)
         num2 = random.randint(10, 80)
     else:
-        num1 = random.randint(80, 200)
-        num2 = random.randint(80, 200)
+        num1 = random.randint(10, 50)
+        num2 = random.randint(10, 70)
 
     # Выбираем случайный знак операции
-    operation = random.choice(['+', '-', '*', '/'])
+    if difficulty == 'easy' or 'medium':
+        operation = random.choice(['+', '-'])
+    else:
+        operation = random.choice(['*', '/'])
 
     # Вычисляем правильный ответ
     if operation == '+':
