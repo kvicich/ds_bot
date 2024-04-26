@@ -2,6 +2,7 @@ import os
 import json
 import disnake
 from disnake.ext import commands
+from disnake import Embed, SelectMenu, SelectOption
 import logging
 import random
 import time
