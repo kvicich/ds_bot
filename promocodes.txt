@@ -1,4 +1,4 @@
-0.20 - 0.020 =+ bitcoin
+0.21 - 0.021 =+ bitcoin
 start - 2000 =+ money
 komaru - 3 =+ bananacoin
 cocoa - 0.1 =+ ethereum
@@ -8,3 +8,4 @@ discord - 2.5 =+ bananacoin
 wumpus - 0.05 =+ ethereum
 business_man - 0.09 =+ ethereum
 worker - 2.94865 =+ bananacoin
+the-text-game - 0.02 =+ bitcoin
