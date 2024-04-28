@@ -7,6 +7,7 @@ import logging
 import random
 import time
 import asyncio
+from datetime import datetime, timezone
 
 # Переменные
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
@@ -866,6 +867,44 @@ async def work_cmd(inter):
             await inter.followup.send('Неверно. Попробуйте еще раз.', ephemeral=True)
     except asyncio.TimeoutError:
         await inter.followup.send('Время вышло. Попробуйте снова.', ephemeral=True)
+
+# Функция для формирования лидерборда с использованием интерактивных элементов
+async def create_leaderboard(inter, all_user_data, attribute, page_number=1, per_page=10):
+    sorted_users = sorted(all_user_data.items(), key=lambda x: x[1].get(attribute, 0), reverse=True)
+    start_index = (page_number - 1) * per_page
+    end_index = start_index + per_page
+    leaderboard_page = sorted_users[start_index:end_index]
+
+    embed = Embed(title=f"Лидерборд - {attribute.capitalize()} (Страница {page_number})", color=disnake.Color.orange(), timestamp=datetime.now(timezone.utc))
+
+    for rank, (user_id, user_data) in enumerate(leaderboard_page, start=start_index + 1):
+        user_name = inter.guild.get_member(user_id)
+        if user_name:
+            user_name = user_name.display_name
+        else:
+            user_name = f"Пользователь {user_id} не найден на сервере"
+        attribute_value = user_data.get(attribute, 0)
+        user_file_path = user_data.get('file_path') if 'file_path' in user_data else "Файл данных пользователя не найден"
+        embed.add_field(name=f"{rank}. {user_name}", value=f"{attribute.capitalize()}: {attribute_value}\nМестоположение юзерфайла: {user_file_path}", inline=False)
+
+    await inter.response.send_message(embed=embed)
+
+# Слеш-команда для отображения лидерборда
+@bot.slash_command(name="leaderboard", description="Показывает лидерборд")
+async def leaderboard(inter, attribute: str = 'money', page_number: int = 1):
+    all_user_data = {}
+    for server_id in os.listdir(SERVERS_DATA_DIR):
+        server_data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+        if os.path.isdir(server_data_dir):
+            server_users_data = {}
+            for user_file in os.listdir(server_data_dir):
+                if user_file.endswith(".json"):
+                    user_id = user_file.split(".")[0]
+                    user_data = load_user_data(int(server_id), user_id)
+                    server_users_data[user_id] = user_data
+            all_user_data[server_id] = server_users_data
+
+    await create_leaderboard(inter, all_user_data, attribute, page_number)
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
