@@ -775,7 +775,7 @@ async def sell_business(inter, business: str):
 # Функция для обновления состояния бизнесов
 async def update_businesses():
     while True:
-        await asyncio.sleep(1800)  # Указывать в секундах 60 секунд = 1 минута
+        await asyncio.sleep(900)  # Указывать в секундах 60 секунд = 1 минута
         business_data = load_business_data()
         all_user_data = load_all_user_data()
         for server_id, users_data in all_user_data.items():
