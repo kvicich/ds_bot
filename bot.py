@@ -11,8 +11,8 @@ from datetime import datetime, timezone
 
 # Переменные
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
-WORK_COOLDOWN = 250 # Время в секундах между попытками зароботка
-STEAL_COOLDOWN = 500  # Время в секундах между попытками кражи
+WORK_COOLDOWN = 150 # Время в секундах между попытками зароботка
+STEAL_COOLDOWN = 300  # Время в секундах между попытками кражи
 FAILED_STEAL_MIN_LOSS = 15 # Минимальная потеря монет в /steal
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
 MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
@@ -26,7 +26,7 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
 
 # Создаем объект бота
 intents = disnake.Intents.default()
-bot = commands.Bot(command_prefix='!l!', sync_commands_debug=True, intents=intents)
+bot = commands.Bot(intents=intents, sync_commands_debug=True)
 
 # После сброса экономики заебись
 def ensure_server_data_dir(server_id):
@@ -868,7 +868,9 @@ async def work_cmd(inter):
     except asyncio.TimeoutError:
         await inter.followup.send('Время вышло. Попробуйте снова.', ephemeral=True)
 
-
+@bot.slash_command(name='bot_stats', description='Показывает статистику по боту')
+async def bot_stats_cmd(inter):
+    inter.response.defer
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
