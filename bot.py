@@ -77,7 +77,7 @@ def user_data_path(server_id, user_id):
     return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
 
 # Декоратор для проверки, является ли пользователь администратором
-def isAdmin(ctx):
+def is_admin(ctx):
     admin_data_path = os.path.join("admins.json")
     if os.path.exists(admin_data_path):
         with open(admin_data_path, "r") as file:
@@ -88,43 +88,43 @@ def isAdmin(ctx):
 # Декоратор для команд, доступных только администраторам
 def admin_command(command):
     async def wrapper(ctx, *args, **kwargs):
-        if isAdmin(ctx):
+        if is_admin(ctx):
             await command(ctx, *args, **kwargs)
         else:
             await ctx.send("У вас нет прав для выполнения этой команды.")
     return wrapper
 
-# Декоратор для проверки, является ли пользователь администратором
-def isTester(ctx):
-    admin_data_path = os.path.join("Testers.json")
-    if os.path.exists(admin_data_path):
-        with open(admin_data_path, "r") as file:
-            admins = json.load(file)
-            return ctx.author.id in admins
+# Декоратор для проверки, является ли пользователь тестировщиком
+def is_tester(ctx):
+    tester_data_path = os.path.join("testers.json")
+    if os.path.exists(tester_data_path):
+        with open(tester_data_path, "r") as file:
+            testers = json.load(file)
+            return ctx.author.id in testers
     return False
 
-# Декоратор для команд, доступных только администраторам
-def Tester_command(command):
+# Декоратор для команд, доступных только тестировщикам
+def tester_command(command):
     async def wrapper(ctx, *args, **kwargs):
-        if isTester(ctx):
+        if is_tester(ctx):
             await command(ctx, *args, **kwargs)
         else:
             await ctx.send("У вас нет прав для выполнения этой команды.")
     return wrapper
 
-# Декоратор для проверки, является ли пользователь администратором
-def isOwner(ctx):
-    admin_data_path = os.path.join("Owner.json")
-    if os.path.exists(admin_data_path):
-        with open(admin_data_path, "r") as file:
-            admins = json.load(file)
-            return ctx.author.id in admins
+# Декоратор для проверки, является ли пользователь владельцем
+def is_owner(ctx):
+    owner_data_path = os.path.join("owners.json")
+    if os.path.exists(owner_data_path):
+        with open(owner_data_path, "r") as file:
+            owners = json.load(file)
+            return ctx.author.id in owners
     return False
 
-# Декоратор для команд, доступных только администраторам
+# Декоратор для команд, доступных только владельцам
 def owner_command(command):
     async def wrapper(ctx, *args, **kwargs):
-        if isOwner(ctx):
+        if is_owner(ctx):
             await command(ctx, *args, **kwargs)
         else:
             await ctx.send("У вас нет прав для выполнения этой команды.")
