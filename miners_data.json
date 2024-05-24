@@ -32,16 +32,16 @@
         ]
     },
     "Xeon W3-2423": {
-        "price": 5460,
-        "hashrate": "149",
+        "price": 3660,
+        "hashrate": "109",
         "electricity_consumption": "7",
         "supported_cryptos": [
             "bananacoin"
         ]
     },
     "Xeon W5-2445": {
-        "price": 10000,
-        "hashrate": "353",
+        "price": 7000,
+        "hashrate": "289",
         "electricity_consumption": "15",
         "supported_cryptos": [
             "bananacoin"
