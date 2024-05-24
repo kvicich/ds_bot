@@ -2,14 +2,13 @@ import os
 import json
 import disnake
 from disnake.ext import commands
-from disnake import Embed, SelectMenu, SelectOption
 import logging
 import random
 import time
 import asyncio
-from datetime import datetime, timezone
 
 # Переменные
+start_time = time.time()
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
 WORK_COOLDOWN = 150 # Время в секундах между попытками зароботка
 STEAL_COOLDOWN = 300  # Время в секундах между попытками кражи
@@ -869,8 +868,31 @@ async def work_cmd(inter):
         await inter.followup.send('Время вышло. Попробуйте снова.', ephemeral=True)
 
 @bot.slash_command(name='bot_stats', description='Показывает статистику по боту')
-async def bot_stats_cmd(inter):
-    inter.response.defer
+async def bot_stats_cmd(inter: disnake.ApplicationCommandInteraction):
+    await inter.response.defer()
+
+    # Пинг
+    latency = round(bot.latency * 1000)  # Пинг в миллисекундах
+
+    # Аптайм
+    current_time = time.time()
+    uptime_seconds = int(current_time - start_time)
+    uptime_str = time.strftime("%H:%M:%S", time.gmtime(uptime_seconds))
+
+    # Информация о текущей гильдии
+    guild = inter.guild
+    guild_info = f"Имя гильдии: {guild.name}, Айди гильдии: {guild.id}, Участников: {guild.member_count}"
+
+    # Формируем сообщение
+    message = (
+        f"Информация о боте:\n"
+        f"Имя бота: {bot.user}\n"
+        f"{guild_info}\n"
+        f"Пинг: {latency} ms\n"
+        f"Аптайм: {uptime_str}"
+    )
+
+    await inter.followup.send(message)
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
