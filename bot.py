@@ -22,7 +22,7 @@ MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
 BUSINESS_DATA_PATH = "business_data.json" # Файл с информацией о майнерах
 under_construction = "working.txt" # Сообщения для команд в разработке
 mining_tasks = {} # Задачи для майнинга, не пихайте туда ничего
-owner_id = 822112444973056011 # Сюда запишите айди овнера бота, сейчас стоит мой
+owner_id = "822112444973056011" # Сюда запишите айди овнера бота, сейчас стоит мой
 
 # Создаем объект бота
 intents = disnake.Intents.default()
@@ -803,7 +803,7 @@ async def work_cmd(inter):
 
     # Ожидаем ответ от пользователя
     try:
-        user_answer = await bot.wait_for('message', check=lambda message: message.author == inter.author and message.channel == inter.channel, timeout=10)
+        user_answer = await bot.wait_for('message', check=lambda message: message.author == inter.author and message.channel == inter.channel, timeout=25)
         
         # Проверяем, что пользователь отправил не пустое сообщение
         if user_answer.content.strip() == "":
