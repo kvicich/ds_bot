@@ -7,6 +7,10 @@ import random
 import time
 import asyncio
 
+logger = logging.getLogger('discord_bot') # Логирование
+logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+
 # Переменные
 start_time = time.time()
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
@@ -16,12 +20,9 @@ FAILED_STEAL_MIN_LOSS = 15 # Минимальная потеря монет в /
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
 MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
 BUSINESS_DATA_PATH = "business_data.json" # Файл с информацией о майнерах
-under_construction = "working.txt"
-mining_tasks = {}
-
-logger = logging.getLogger('discord_bot')
-logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
+under_construction = "working.txt" # Сообщения для команд в разработке
+mining_tasks = {} # Задачи для майнинга, не пихайте туда ничего
+owner_id = 822112444973056011 # Сюда запишите айди овнера бота, сейчас стоит мой
 
 # Создаем объект бота
 intents = disnake.Intents.default()
@@ -75,59 +76,81 @@ def save_user_data(server_id, user_id, data):
 def user_data_path(server_id, user_id):
     return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
 
-# Декоратор для проверки, является ли пользователь администратором
-def is_admin(ctx):
-    admin_data_path = os.path.join("admins.json")
-    if os.path.exists(admin_data_path):
-        with open(admin_data_path, "r") as file:
-            admins = json.load(file)
-            return ctx.author.id in admins
-    return False
+# Функция для загрузки списка админов, владельцев и тестеров из файла
+def load_access_data(server_id):
+    access_data_path = os.path.join("servers_data", str(server_id), "access_data.json")
+    if os.path.exists(access_data_path):
+        with open(access_data_path, "r", encoding="UTF-8") as f:
+            return json.load(f)
+    else:
+        return {"admins": [], "testers": []}
 
-# Декоратор для команд, доступных только администраторам
-def admin_command(command):
-    async def wrapper(ctx, *args, **kwargs):
-        if is_admin(ctx):
-            await command(ctx, *args, **kwargs)
-        else:
-            await ctx.send("У вас нет прав для выполнения этой команды.")
-    return wrapper
+# Функция для сохранения списка админов, владельцев и тестеров в файл
+def save_access_data(server_id, access_data):
+    ensure_server_data_dir(server_id)
+    access_data_path = os.path.join("servers_data", str(server_id), "access_data.json")
+    with open(access_data_path, "w", encoding="UTF-8") as f:
+        json.dump(access_data, f, indent=4)
 
-# Декоратор для проверки, является ли пользователь тестировщиком
-def is_tester(ctx):
-    tester_data_path = os.path.join("testers.json")
-    if os.path.exists(tester_data_path):
-        with open(tester_data_path, "r") as file:
-            testers = json.load(file)
-            return ctx.author.id in testers
-    return False
+# Обновленная функция для проверки уровня доступа пользователя
+def check_access_level(access_level: str, user_id: str, server_id: int) -> bool:
+    access_data = load_access_data(server_id)
+    if access_level.lower() == "owner":
+        return user_id == owner_id
+    elif access_level.lower() == "admin":
+        return user_id in access_data["admins"] or user_id == owner_id
+    elif access_level.lower() == "tester":
+        return user_id in access_data["testers"] or user_id in access_data["admins"] or user_id == owner_id
+    else:
+        return False
 
-# Декоратор для команд, доступных только тестировщикам
-def tester_command(command):
-    async def wrapper(ctx, *args, **kwargs):
-        if is_tester(ctx):
-            await command(ctx, *args, **kwargs)
-        else:
-            await ctx.send("У вас нет прав для выполнения этой команды.")
-    return wrapper
+# Команда для смены уровня доступа пользователя
+@bot.slash_command(name='change_access', description="Изменяет уровень доступа пользователя.")
+async def change_access(inter, user_id: int, new_level: str):
+    if inter.author.id != owner_id:
+        await inter.response.send_message("У вас нет доступа к этой команде.")
+        return
 
-# Декоратор для проверки, является ли пользователь владельцем
-def is_owner(ctx):
-    owner_data_path = os.path.join("owners.json")
-    if os.path.exists(owner_data_path):
-        with open(owner_data_path, "r") as file:
-            owners = json.load(file)
-            return ctx.author.id in owners
-    return False
+    result = change_access_level(str(user_id), new_level)
+    await inter.response.send_message(result)
 
-# Декоратор для команд, доступных только владельцам
-def owner_command(command):
-    async def wrapper(ctx, *args, **kwargs):
-        if is_owner(ctx):
-            await command(ctx, *args, **kwargs)
-        else:
-            await ctx.send("У вас нет прав для выполнения этой команды.")
-    return wrapper
+# Функция для смены уровня доступа пользователя на уровне бота
+def change_access_level(user_id: str, new_level: str):
+    access_data = load_access_data()
+    if new_level.lower() not in ["owner", "admin", "tester"]:
+        return "Неизвестный уровень доступа."
+
+    if new_level.lower() == "owner":
+        access_data["owners"] = [user_id]
+        access_data["admins"] = []
+        access_data["testers"] = []
+    elif new_level.lower() == "admin":
+        access_data["admins"].append(user_id)
+        access_data["testers"] = [uid for uid in access_data["testers"] if uid != user_id]
+    elif new_level.lower() == "tester":
+        access_data["testers"].append(user_id)
+        access_data["admins"] = [uid for uid in access_data["admins"] if uid != user_id]
+
+    save_access_data(access_data)
+    return f"Уровень доступа для пользователя {user_id} изменён на {new_level}."
+
+@bot.slash_command(name='test_admin', description="Проверяет уровень доступа пользователя.")
+async def test_adm_cmd(inter):
+    user_id = str(inter.author.id)
+    server_id = inter.guild.id
+
+    access_levels = ["owner", "admin", "tester"]
+    user_access_level = None
+
+    for level in access_levels:
+        if check_access_level(level, user_id, server_id):
+            user_access_level = level
+            break
+
+    if user_access_level:
+        await inter.response.send_message(f"Ваш уровень доступа: {user_access_level.capitalize()}")
+    else:
+        await inter.response.send_message("У вас нет доступа.")
 
 # Асинхронная функция для генерации случайного сообщения
 async def randy_random():
@@ -135,78 +158,6 @@ async def randy_random():
         messages = file.readlines()
         message = random.choice(messages).strip()
         return message
-
-# Команда для добавления тестера
-@owner_command
-@bot.slash_command(name='add_tester', description="Добавляет тестера в бот.")
-async def add_tester(ctx, member: disnake.User):
-    admin_data_path = os.path.join("Testers.json")
-
-    if os.path.exists(admin_data_path):
-        with open(admin_data_path, "r") as file:
-            admins = json.load(file)
-    else:
-        admins = []
-
-    admins.append(member.id)
-
-    with open(admin_data_path, "w") as file:
-        json.dump(admins, file)
-
-    await ctx.send(f"{member.mention} добавлен в список тестеров.")
-
-# Команда для удаления тестера
-@owner_command
-@bot.slash_command(name='rem_tester', description="Удаляет тестера с бота.")
-async def rem_tester(ctx, member: disnake.User):
-    admin_data_path = os.path.join("Testers.json")
-
-    if os.path.exists(admin_data_path):
-        with open(admin_data_path, "r") as file:
-            admins = json.load(file)
-        if member.id in admins:
-            admins.remove(member.id)
-            with open(admin_data_path, "w") as file:
-                json.dump(admins, file)
-            await ctx.send(f"{member.mention} удален из списка тестеров.")
-        else:
-            await ctx.send(f"{member.mention} не является тестером.")
-    else:
-        await ctx.send("На сервере нет тестеров.")
-
-# Команда для добавления администратора
-@owner_command
-@bot.slash_command(name='add_admin', description="Добавляет администратора на сервере.")
-async def add_admin(ctx, member: disnake.Member):
-    admin_data_path = os.path.join("admins.json")
-    if os.path.exists(admin_data_path):
-        with open(admin_data_path, "r") as file:
-            admins = json.load(file)
-    else:
-        admins = []
-    admins.append(member.id)
-    with open(admin_data_path, "w") as file:
-        json.dump(admins, file)
-
-    await ctx.send(f"{member.mention} добавлен в список администраторов.")
-
-# Команда для удаления администратора
-@owner_command
-@bot.slash_command(name='rem_admin', description="Удаляет администратора с сервера.")
-async def rem_admin(ctx, member: disnake.Member):
-    admin_data_path = os.path.join("admins.json")
-    if os.path.exists(admin_data_path):
-        with open(admin_data_path, "r") as file:
-            admins = json.load(file)
-        if member.id in admins:
-            admins.remove(member.id)
-            with open(admin_data_path, "w") as file:
-                json.dump(admins, file)
-            await ctx.send(f"{member.mention} удален из списка администраторов.")
-        else:
-            await ctx.send(f"{member.mention} не является администратором.")
-    else:
-        await ctx.send("На сервере нет администраторов.")
 
 # Событие выполняющееся после полного запуска бота
 @bot.event
@@ -338,21 +289,31 @@ def load_crypto_prices():
 
 CRYPTO_LIST = load_crypto_prices()
 
-@admin_command
 @bot.slash_command(name="change_crypto_prices", description='Сменить цены криптовалют.')
 async def change_crypto_prices(inter):
+    user_id = str(inter.author.id)
+    server_id = inter.guild.id
+
+    if not check_access_level("admin", user_id, server_id):
+        await inter.response.send_message("У вас нет доступа к этой команде.")
+        return
+    
     print("Кто-то принудительно изменил цены криптовалют!")
     generate_crypto_prices()
     await inter.response.send_message("Вы принудительно изменили цены криптовалют!")
 
 # Команда для выдачи денег
-@admin_command
 @bot.slash_command(name='give_money', description="Выдает деньги пользователю.")
 async def give_money(inter, member: disnake.Member, amount: int):
     # Загрузка данных пользователя
-    user_id = str(member.id)
-    server_id = str(inter.guild.id)
+    user_id = str(inter.author.id)
+    server_id = inter.guild.id
     user_data = load_user_data(server_id, user_id)
+
+    # Проверяем на соответствие уровню допуска
+    if not check_access_level("admin", user_id, server_id):
+        await inter.response.send_message("У вас нет доступа к этой команде.")
+        return
 
     # Добавление денег пользователю
     user_data['money'] = user_data.get('money', 0) + amount
@@ -364,13 +325,16 @@ async def give_money(inter, member: disnake.Member, amount: int):
     save_user_data(server_id, user_id, user_data)
 
 # Команда для отнятия денег
-@admin_command
 @bot.slash_command(name='take_money', description="Отнимает деньги у пользователя.")
 async def take_money(inter, member: disnake.Member, amount: int):
     # Загрузка данных пользователя
     user_id = str(member.id)
     server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
+
+    if not check_access_level("admin", user_id, server_id):
+        await inter.response.send_message("У вас нет доступа к этой команде.")
+        return
 
     # Проверка достаточности денег у пользователя
     if user_data.get('money', 0) < amount:
@@ -387,7 +351,6 @@ async def take_money(inter, member: disnake.Member, amount: int):
     save_user_data(server_id, user_id, user_data)
 
 # Команда для выдачи криптовалюты
-@admin_command
 @bot.slash_command(name='give_crypto', description="Выдает криптовалюту пользователю.")
 async def give_crypto(inter, currency: str, member: disnake.Member, amount: int):
     # Проверка наличия указанной криптовалюты в списке
@@ -400,6 +363,10 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
     server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
 
+    if not check_access_level("admin", user_id, server_id):
+        await inter.response.send_message("У вас нет доступа к этой команде.")
+        return
+
     # Добавление указанной криптовалюты пользователю
     user_data[currency.lower()] = user_data.get(currency.lower(), 0) + amount
 
@@ -410,7 +377,6 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
     save_user_data(server_id, user_id, user_data)
 
 # Команда для отнятия криптовалюты
-@admin_command
 @bot.slash_command(name='take_crypto', description="Отнимает криптовалюту у пользователя.")
 async def take_crypto(inter, currency: str, member: disnake.Member, amount: int):
     # Проверка наличия указанной криптовалюты в списке
@@ -422,6 +388,10 @@ async def take_crypto(inter, currency: str, member: disnake.Member, amount: int)
     user_id = str(member.id)
     server_id = str(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
+
+    if not check_access_level("admin", user_id, server_id):
+        await inter.response.send_message("У вас нет доступа к этой команде.")
+        return
 
     # Проверка достаточности указанной криптовалюты у пользователя
     if user_data.get(currency.lower(), 0) < amount:
