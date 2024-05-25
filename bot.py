@@ -165,7 +165,8 @@ async def on_ready():
     print(f"Бот запущен, его имя {bot.user}\n"
           f"Все сервера где есть бот: {bot.guilds}")
     await bot.change_presence(activity=disnake.Game(name="Как заебать юзера"))
-    print("Статус бота изменён")
+    await bot.change_presence(status=disnake.Status.idle)
+    print("Активность и статус бота изменены")
 
 # Команда для подработки
 @bot.slash_command(name='sidejob', description="Работка.")
@@ -182,7 +183,7 @@ async def SideJob_cmd(inter):
             return
     last_work_time[user_id] = current_time
     bot.last_work_time[server_id] = last_work_time
-    currency_earned = random.randint(20, 143)
+    currency_earned = random.randint(35, 234)
     with open("work_message.txt", "r", encoding="utf-8") as file:
         messages = file.readlines()
         work_message = random.choice(messages).strip()
@@ -210,7 +211,7 @@ async def steal_cmd(inter):
     last_steal_time[user_id] = current_time
     bot.last_steal_time[server_id] = last_steal_time
     if random.random() < 0.5:  # Шанс 50%
-        stolen_amount = random.randint(40, 334)
+        stolen_amount = random.randint(50, 510)
         with open("steal_message.txt", "r", encoding="utf-8") as file:
             messages = file.readlines()
             steal_message = random.choice(messages).strip()
@@ -251,10 +252,10 @@ async def crypto_prices_cmd(inter):
 def generate_crypto_prices():
     crypto_list = load_crypto_prices()
     for currency in crypto_list:
-        change1 = random.uniform(-1.9, -0.1)
-        change2 = random.uniform(0.1, 1.9)
-        change_percent = random.uniform(change1, change2)  # Изменение на случайный процент от -1% до 1%
-        if random.random() < 0.07:  # Шанс 7% на редкое изменение
+        change1 = random.uniform(-2, -0.1)
+        change2 = random.uniform(0.1, 2)
+        change_percent = random.uniform(change1, change2)  # Изменение на случайный процент от -2% до 2%
+        if random.random() < 0.09:  # Шанс 9% на редкое изменение
             change1 = random.uniform(0.6, 0.9)
             change2 = random.uniform(1.01, 1.3)
             change_percent *= random.uniform(change1, change2)  # Редкое изменение от -20% до 20%

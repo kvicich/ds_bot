@@ -1,4 +1,4 @@
-0.22 - 0.022 =+ bitcoin
+0.23 - 0.023 =+ bitcoin
 start - 2000 =+ money
 komaru - 3 =+ bananacoin
 cocoa - 0.1 =+ ethereum
@@ -11,3 +11,6 @@ worker - 2.94865 =+ bananacoin
 the-text-game - 0.02 =+ bitcoin
 summer - 0.3 =+ ethereum
 work - 1300 =+ money
+stats - 560 =+ money
+bug - 0.01 =+ bitcoin
+cat_control - 5 =+ bananacoin
