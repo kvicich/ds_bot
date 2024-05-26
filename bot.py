@@ -159,8 +159,7 @@ async def randy_random():
 async def on_ready():
     print(f"Бот запущен, его имя {bot.user}\n"
           f"Все сервера где есть бот: {bot.guilds}")
-    await bot.change_presence(activity=disnake.Game(name="Как заебать юзера"))
-    await bot.change_presence(status=disnake.Status.idle)
+    await bot.change_presence(activity=disnake.Game(name="Как заебать юзера"), status=disnake.Status.idle)
     print("Активность и статус бота изменены")
 
 # Команда для подработки
