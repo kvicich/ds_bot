@@ -77,8 +77,8 @@ def user_data_path(server_id, user_id):
     return os.path.join(SERVERS_DATA_DIR, str(server_id), f"{user_id}.json")
 
 # Функция для загрузки списка админов, владельцев и тестеров из файла
-def load_access_data(server_id):
-    access_data_path = os.path.join("servers_data", str(server_id), "access_data.json")
+def load_access_data():
+    access_data_path = os.path.join("servers_data", "access_data.json")
     if os.path.exists(access_data_path):
         with open(access_data_path, "r", encoding="UTF-8") as f:
             return json.load(f)
@@ -86,9 +86,8 @@ def load_access_data(server_id):
         return {"admins": [], "testers": []}
 
 # Функция для сохранения списка админов, владельцев и тестеров в файл
-def save_access_data(server_id, access_data):
-    ensure_server_data_dir(server_id)
-    access_data_path = os.path.join("servers_data", str(server_id), "access_data.json")
+def save_access_data(access_data):
+    access_data_path = os.path.join("servers_data/access_data.json")
     with open(access_data_path, "w", encoding="UTF-8") as f:
         json.dump(access_data, f, indent=4)
 
@@ -106,25 +105,21 @@ def check_access_level(access_level: str, user_id: str, server_id: int) -> bool:
 
 # Команда для смены уровня доступа пользователя
 @bot.slash_command(name='change_access', description="Изменяет уровень доступа пользователя.")
-async def change_access(inter, user_id: int, new_level: str):
-    if inter.author.id != owner_id:
+async def change_access(inter, user_id: str, new_level: str):
+    if inter.author.id == owner_id:
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
 
-    result = change_access_level(str(user_id), new_level)
+    result = change_access_level(int(user_id), new_level)
     await inter.response.send_message(result)
 
 # Функция для смены уровня доступа пользователя на уровне бота
 def change_access_level(user_id: str, new_level: str):
     access_data = load_access_data()
-    if new_level.lower() not in ["owner", "admin", "tester"]:
-        return "Неизвестный уровень доступа."
+    if new_level.lower() not in ["admin", "tester"]:
+        return "Неизвестный или уровень доступа."
 
-    if new_level.lower() == "owner":
-        access_data["owners"] = [user_id]
-        access_data["admins"] = []
-        access_data["testers"] = []
-    elif new_level.lower() == "admin":
+    if new_level.lower() == "admin":
         access_data["admins"].append(user_id)
         access_data["testers"] = [uid for uid in access_data["testers"] if uid != user_id]
     elif new_level.lower() == "tester":
