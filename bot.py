@@ -7,10 +7,6 @@ import random
 import time
 import asyncio
 
-logger = logging.getLogger('discord_bot') # Логирование
-logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-
 # Переменные
 start_time = time.time() # Время запуска (для /bot_stats)
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
@@ -22,11 +18,36 @@ MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
 BUSINESS_DATA_PATH = "business_data.json" # Файл с информацией о майнерах
 BUSINESS_COOLDOWN = 900  # Время обновления бизнесов в секундах 60 секунд = 1 минута
 INFO_COOLDOWN = 120 # Время в секундах между запросом информации о майнерах/бизнесах
+SAVE_LOGS = True # Установите в False, если не хотите сохранять логи в файл
 under_construction = "working.txt" # Сообщения для команд в разработке
 mining_tasks = {} # Задачи для майнинга, не пихайте туда ничего
 owner_id = "822112444973056011" # Сюда запишите айди овнера бота, сейчас стоит мой
 
+def setup_logging():
+    # Создаем логгер
+    logger = logging.getLogger('discord_bot')
+    logger.setLevel(logging.DEBUG)
+
+    # Определяем формат логов
+    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+
+    # Настройка для вывода логов на консоль
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    if SAVE_LOGS:
+        # Настройка для сохранения логов в файл
+        file_handler = logging.FileHandler('ds_bot.log')
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    return logger
+
 # Создаем объект бота
+logger = setup_logging()
 intents = disnake.Intents.default()
 bot = commands.Bot(intents=intents, sync_commands_debug=True)
 
@@ -159,9 +180,9 @@ async def randy_random():
 # Событие выполняющееся после полного запуска бота
 @bot.event
 async def on_ready():
-    logging.info(f"Бот запущен, его имя {bot.user}")
+    logger.info(f"Бот запущен, его имя {bot.user}")
     await bot.change_presence(activity=disnake.Game(name="Заёбывает юзеров"), status=disnake.Status.idle)
-    print("Активность и статус бота изменены")
+    logger.info("Активность и статус бота изменены")
 
 # Команда для подработки
 @bot.slash_command(name='sidejob', description="Работка.")
@@ -259,7 +280,7 @@ def generate_crypto_prices():
         crypto_list[currency]['price'] = round(crypto_list[currency]['price'], 0)
     with open("crypto_prices.json", "w") as file:
         json.dump(crypto_list, file)
-    print("Изменились цены криптовалют!")
+    logger.info("Изменились цены криптовалют!")
 
 # Цикл меняющий цены раз в 5 минут
 async def crypto_prices_generator():
@@ -271,16 +292,16 @@ async def crypto_prices_generator():
 def save_crypto_prices(crypto_list):
     with open("crypto_prices.json", "w") as file:
         json.dump(crypto_list, file)
-        print("Сохранены курсы криптовалют!")
+        logger.debug("Сохранены курсы криптовалют!")
 
 # Функция для загрузки текущих курсов криптовалют из файла
 def load_crypto_prices():
     if os.path.exists("crypto_prices.json"):
         with open("crypto_prices.json", "r") as file:
-            print("Загружены курсы криптовалют!")
+            logger.debug("Загружены курсы криптовалют!")
             return json.load(file)
     else:
-        print("Загружены начальные курсы криптовалют! Проверьте файл crypto_prices.json!")
+        logger.warn("Загружены начальные курсы криптовалют! Проверьте файл crypto_prices.json!")
         return {"bitcoin": {"emoji": ":dvd:", "price": 50000}, "ethereum": {"emoji": ":cd:", "price": 10000}, "bananacoin": {"emoji": ":banana:", "price": 250}}
 
 CRYPTO_LIST = load_crypto_prices()
@@ -294,7 +315,7 @@ async def change_crypto_prices(inter):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
     
-    print("Кто-то принудительно изменил цены криптовалют!")
+    logger.info("Кто-то принудительно изменил цены криптовалют!")
     generate_crypto_prices()
     await inter.response.send_message("Вы принудительно изменили цены криптовалют!")
 
@@ -661,7 +682,7 @@ async def mine_coins(server_id, user_id, selected_crypto=None):
                 user_data["money"] -= consumption
                 save_user_data(server_id, user_id, user_data)
         else: 
-            print("У пользователя отсутствуют майнеры, цикл продолжается")
+            logger.debug("У пользователя отсутствуют майнеры, цикл продолжается")
 
 @bot.slash_command(name='stop_mining', description="Остановка майнинга")
 async def stop_mining_cmd(inter):
@@ -754,9 +775,9 @@ async def update_businesses():
                             user_money = user_data.get("money", 0)
                             user_data["money"] = user_money + income * business_count - consumption * business_count
                             save_user_data(server_id, user_id, user_data)
-                            print(f"Обработан бизнес пользователя с айди: {user_id}")
+                            logger.info(f"Обработан бизнес пользователя с айди: {user_id}")
                         else:
-                            print(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
+                            logger.info(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
 
 @bot.slash_command(name='work', description="Работать")
 async def work_cmd(inter):
