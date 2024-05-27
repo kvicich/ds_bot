@@ -159,8 +159,7 @@ async def randy_random():
 # Событие выполняющееся после полного запуска бота
 @bot.event
 async def on_ready():
-    print(f"Бот запущен, его имя {bot.user}\n"
-          f"Все сервера где есть бот: {bot.guilds}")
+    logging.info(f"Бот запущен, его имя {bot.user}")
     await bot.change_presence(activity=disnake.Game(name="Заёбывает юзеров"), status=disnake.Status.idle)
     print("Активность и статус бота изменены")
 
