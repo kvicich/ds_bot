@@ -15,3 +15,4 @@ stats - 560 =+ money
 bug - 0.01 =+ bitcoin
 cat_control - 5 =+ bananacoin
 exception - 586 =+ money
+logs - 0.02 =+ bitcoin
