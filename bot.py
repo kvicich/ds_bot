@@ -12,7 +12,7 @@ logging.basicConfig(format='%(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 # Переменные
-start_time = time.time()
+start_time = time.time() # Время запуска (для /bot_stats)
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
 WORK_COOLDOWN = 150 # Время в секундах между попытками зароботка
 STEAL_COOLDOWN = 300  # Время в секундах между попытками кражи
@@ -452,9 +452,6 @@ async def exchange_cmd(inter, source_currency: str, target_currency: str, amount
     # Проверяем, что валюты из списка доступных
     if source_currency.lower() not in CRYPTO_LIST and source_currency.lower() != "money":
         await inter.response.send_message(f"Валюта {source_currency} не найдена в списке доступных криптовалют и денег.")
-        return
-    if target_currency.lower() not in CRYPTO_LIST and target_currency.lower() != "money":
-        await inter.response.send_message(f"Валюта {target_currency} не найдена в списке доступных криптовалют и денег.")
         return
 
     # Обрабатываем случай обмена денег на криптовалюту
