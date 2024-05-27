@@ -846,13 +846,12 @@ async def bot_stats_cmd(inter: disnake.ApplicationCommandInteraction):
 
     # Информация о текущей гильдии
     guild = inter.guild
-    guild_info = f"Имя гильдии: {guild.name}, Айди гильдии: {guild.id}, Участников: {guild.member_count}"
 
     # Формируем сообщение
     message = (
         f"Информация о боте:\n"
         f"Имя бота: {bot.user}\n"
-        f"{guild_info}\n"
+        f"Имя гильдии: {guild.name}, Айди гильдии: {guild.id}, Участников: {guild.member_count}\n"
         f"Пинг: {latency} ms\n"
         f"Аптайм: {uptime_str}"
     )
