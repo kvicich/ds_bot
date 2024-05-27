@@ -131,7 +131,7 @@ def change_access_level(user_id: str, new_level: str):
     save_access_data(access_data)
     return f"Уровень доступа для пользователя {user_id} изменён на {new_level}."
 
-@bot.slash_command(name='test_admin', description="Проверяет уровень доступа пользователя.")
+@bot.slash_command(name='test_access', description="Проверяет уровень доступа пользователя.")
 async def test_adm_cmd(inter):
     user_id = str(inter.author.id)
     server_id = inter.guild.id
