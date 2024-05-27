@@ -604,8 +604,8 @@ async def send_long_message(channel, message_content):
 @bot.slash_command(name='miners_info', description="Просмотр информации о доступных майнерах")
 async def miners_info_cmd(inter):
     miners_data = load_miners_data()
-    miners_info = "Доступные майнеры:\n" + get_miners_info(miners_data)
-    server_id = str(inter.guild_id)
+    miners_info = get_miners_info(miners_data)
+    await inter.response.send_message("Доступные майнеры:\n")
     await send_long_message(inter.channel, miners_info)
 
 @bot.slash_command(name='start_mining', description="Запуск майнинга")
@@ -714,7 +714,8 @@ def get_business_info(business_data, business):
 @bot.slash_command(name='business_info', description="Просмотр информации о доступных бизнесах")
 async def business_info(inter):
     business_data = load_business_data()
-    business_info = "Доступные бизнесы:\n"
+    await inter.response.send_message("Доступные бизнесы: \n")
+    business_info = ""
     for business in business_data:
         business_info += get_business_info(business_data, business) + "\n"
     await send_long_message(inter.channel, business_info)
