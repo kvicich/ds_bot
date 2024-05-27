@@ -605,16 +605,7 @@ async def send_long_message(channel, message_content):
 async def miners_info_cmd(inter):
     miners_data = load_miners_data()
     miners_info = "Доступные майнеры:\n" + get_miners_info(miners_data)
-    user_id = str(inter.user.id)
     server_id = str(inter.guild_id)
-    current_time = time.time()
-    last_info_time = bot.last_steal_time.get(server_id, {})
-    if user_id in last_info_time:
-        time_elapsed = current_time - last_info_time[user_id]
-        if time_elapsed < INFO_COOLDOWN:
-            time_left = INFO_COOLDOWN - time_elapsed
-            await inter.response.send_message(f'Вы недавно уже пытались запросить информацию. Подождите еще {int(time_left)} секунд.')
-            return
     await send_long_message(inter.channel, miners_info)
 
 @bot.slash_command(name='start_mining', description="Запуск майнинга")
@@ -723,16 +714,6 @@ def get_business_info(business_data, business):
 @bot.slash_command(name='business_info', description="Просмотр информации о доступных бизнесах")
 async def business_info(inter):
     business_data = load_business_data()
-    user_id = str(inter.user.id)
-    server_id = str(inter.guild_id)
-    current_time = time.time()
-    last_info_time = bot.last_steal_time.get(server_id, {})
-    if user_id in last_info_time:
-        time_elapsed = current_time - last_info_time[user_id]
-        if time_elapsed < INFO_COOLDOWN:
-            time_left = INFO_COOLDOWN - time_elapsed
-            await inter.response.send_message(f'Вы недавно уже пытались запросить информацию. Подождите еще {int(time_left)} секунд.')
-            return
     business_info = "Доступные бизнесы:\n"
     for business in business_data:
         business_info += get_business_info(business_data, business) + "\n"
@@ -906,7 +887,6 @@ def get_token():
 def main():
     bot.last_work_time = {} 
     bot.last_steal_time = {}
-    bot.last_info_time = {}
     bot.loop.create_task(crypto_prices_generator()) # Запускаем генератор цен криптовалюты
     bot.loop.create_task(update_businesses()) # Запускаем проверку бизнесов
     bot.run(get_token())
