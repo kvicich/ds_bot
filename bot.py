@@ -25,6 +25,7 @@ SAVE_LOGS = True # Установите в False, если не хотите с�
 under_construction = "working.txt" # Сообщения для команд в разработке
 mining_tasks = {} # Задачи для майнинга, не пихайте туда ничего
 owner_id = "822112444973056011" # Сюда запишите айди овнера бота, сейчас стоит мой
+VERIFIED_GUILDS = ([1203755517072252989])
 
 def setup_logging():
     # Создаем логгер
@@ -119,7 +120,7 @@ def save_access_data(access_data):
 
 # Обновленная функция для проверки уровня доступа пользователя
 def check_access_level(access_level: str, user_id: str, server_id: int) -> bool:
-    access_data = load_access_data(server_id)
+    access_data = load_access_data()
     if access_level.lower() == "owner":
         return user_id == owner_id
     elif access_level.lower() == "admin":
@@ -135,15 +136,20 @@ async def change_access(inter, user_id: str, new_level: str):
     if inter.author.id == owner_id:
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
+    
+    guild_id = inter.guild_id
 
-    result = change_access_level(int(user_id), new_level)
+    result = change_access_level(int(user_id), int(guild_id), new_level)
     await inter.response.send_message(result)
 
 # Функция для смены уровня доступа пользователя на уровне бота
-def change_access_level(user_id: str, new_level: str):
+def change_access_level(user_id: str, guild_id, new_level: str):
     access_data = load_access_data()
     if new_level.lower() not in ["admin", "tester"]:
         return "Неизвестный или уровень доступа."
+    
+    if guild_id not in VERIFIED_GUILDS:
+        return "Ваша гильдия не верифицированна, команда не доступна"
 
     if new_level.lower() == "admin":
         access_data["admins"].append(user_id)
@@ -158,7 +164,10 @@ def change_access_level(user_id: str, new_level: str):
 @bot.slash_command(name='test_access', description="Проверяет уровень доступа пользователя.")
 async def test_adm_cmd(inter):
     user_id = str(inter.author.id)
-    server_id = inter.guild.id
+    server_id = int(inter.guild.id)
+
+    if server_id not in VERIFIED_GUILDS:
+        return "Ваша гильдия не верифицированна, команда не доступна"
 
     access_levels = ["owner", "admin", "tester"]
     user_access_level = None
@@ -257,7 +266,7 @@ async def ping(inter):
     await inter.response.defer()
     end_time = time.time()
     ping_time = round((end_time - start_time) * 1000)
-    await inter.edit_original_message(content=f"Понг!\n"
+    await inter.edit_original_message(content=f"Понг! :ping_pong:\n"
                                       f"Ваш пинг: {ping_time} мс")
 
 # Команда для просмотра текущих курсов криптовалют
@@ -318,6 +327,10 @@ async def change_crypto_prices(inter):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
     
+    if server_id not in VERIFIED_GUILDS:
+        await inter.response.sens_message("Ваша гильдия не верифицированна, команда не доступна")
+        return 
+    
     logger.info("Кто-то принудительно изменил цены криптовалют!")
     generate_crypto_prices()
     await inter.response.send_message("Вы принудительно изменили цены криптовалют!")
@@ -334,6 +347,10 @@ async def give_money(inter, member: disnake.Member, amount: int):
     if not check_access_level("admin", user_id, server_id):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
+
+    if server_id not in VERIFIED_GUILDS:
+        await inter.response.sens_message("Ваша гильдия не верифицированна, команда не доступна")
+        return 
 
     # Добавление денег пользователю
     user_data['money'] = user_data.get('money', 0) + amount
@@ -355,6 +372,10 @@ async def take_money(inter, member: disnake.Member, amount: int):
     if not check_access_level("admin", user_id, server_id):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
+    
+    if server_id not in VERIFIED_GUILDS:
+        await inter.response.sens_message("Ваша гильдия не верифицированна, команда не доступна")
+        return 
 
     # Проверка достаточности денег у пользователя
     if user_data.get('money', 0) < amount:
@@ -386,6 +407,10 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
     if not check_access_level("admin", user_id, server_id):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
+    
+    if server_id not in VERIFIED_GUILDS:
+        await inter.response.sens_message("Ваша гильдия не верифицированна, команда не доступна")
+        return 
 
     # Добавление указанной криптовалюты пользователю
     user_data[currency.lower()] = user_data.get(currency.lower(), 0) + amount
@@ -412,6 +437,10 @@ async def take_crypto(inter, currency: str, member: disnake.Member, amount: int)
     if not check_access_level("admin", user_id, server_id):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
+    
+    if server_id not in VERIFIED_GUILDS:
+        await inter.response.sens_message("Ваша гильдия не верифицированна, команда не доступна")
+        return 
 
     # Проверка достаточности указанной криптовалюты у пользователя
     if user_data.get(currency.lower(), 0) < amount:
@@ -870,11 +899,19 @@ async def bot_stats_cmd(inter: disnake.ApplicationCommandInteraction):
 
     # Информация о текущей гильдии
     guild = inter.guild
+    server_id = inter.guild.id
+
+    # Формируем статус гильдии
+    if server_id not in VERIFIED_GUILDS:
+        guild_status = "Не верифицирована"
+    else:
+        guild_status = "Верифицирована"
 
     await inter.followup.send((
         f"Информация о боте:\n"
         f"Имя бота: {bot.user}\n"
         f"Имя гильдии: {guild.name}, Айди гильдии: {guild.id}, Участников: {guild.member_count}\n"
+        f"Статус гильдии: {guild_status}\n"
         f"Пинг: {latency} ms\n"
         f"Аптайм: {uptime_str}"
     ))
