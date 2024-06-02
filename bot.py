@@ -10,8 +10,9 @@ import asyncio
 # Переменные
 start_time = time.time() # Время запуска (для /bot_stats)
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
-WORK_COOLDOWN = 150 # Время в секундах между попытками зароботка
+WORK_COOLDOWN = 150 # Время в секундах между попытками зароботка для /sidejob
 WORK_INCOME = 35, 234 # Заработок с /sidejob
+WORK_TIMEOUT = 25 # Таймаут в /work
 STEAL_COOLDOWN = 300  # Время в секундах между попытками кражи
 STEAL_INCOME = 50, 510 # Заработок с /steal
 FAILED_STEAL_MIN_LOSS = 15 # Минимальная потеря монет в /steal
@@ -821,7 +822,7 @@ async def work_cmd(inter):
 
     # Ожидаем ответ от пользователя
     try:
-        user_answer = await bot.wait_for('message', check=lambda message: message.author == inter.author and message.channel == inter.channel, timeout=25)
+        user_answer = await bot.wait_for('message', check=lambda message: message.author == inter.author and message.channel == inter.channel, timeout=WORK_TIMEOUT)
         
         # Проверяем, что пользователь отправил не пустое сообщение
         if user_answer.content.strip() == "":
