@@ -11,7 +11,9 @@ import asyncio
 start_time = time.time() # Время запуска (для /bot_stats)
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
 WORK_COOLDOWN = 150 # Время в секундах между попытками зароботка
+WORK_INCOME = 35, 234 # Заработок с /sidejob
 STEAL_COOLDOWN = 300  # Время в секундах между попытками кражи
+STEAL_INCOME = 50, 510 # Заработок с /steal
 FAILED_STEAL_MIN_LOSS = 15 # Минимальная потеря монет в /steal
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
 MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
@@ -199,7 +201,7 @@ async def SideJob_cmd(inter):
             return
     last_work_time[user_id] = current_time
     bot.last_work_time[server_id] = last_work_time
-    currency_earned = random.randint(35, 234)
+    currency_earned = random.randint(WORK_INCOME)
     with open("work_message.txt", "r", encoding="utf-8") as file:
         messages = file.readlines()
         work_message = random.choice(messages).strip()
@@ -227,7 +229,7 @@ async def steal_cmd(inter):
     last_steal_time[user_id] = current_time
     bot.last_steal_time[server_id] = last_steal_time
     if random.random() < 0.5:  # Шанс 50%
-        stolen_amount = random.randint(50, 510)
+        stolen_amount = random.randint(STEAL_INCOME)
         with open("steal_message.txt", "r", encoding="utf-8") as file:
             messages = file.readlines()
             steal_message = random.choice(messages).strip()
