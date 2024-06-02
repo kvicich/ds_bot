@@ -401,7 +401,7 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
 
     # Загрузка данных пользователя
     user_id = str(member.id)
-    server_id = str(inter.guild.id)
+    server_id = int(inter.guild.id)
     user_data = load_user_data(server_id, user_id)
 
     if not check_access_level("admin", user_id, server_id):
@@ -409,7 +409,7 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
         return
     
     if server_id not in VERIFIED_GUILDS:
-        await inter.response.sens_message("Ваша гильдия не верифицированна, команда не доступна")
+        await inter.response.send_message("Ваша гильдия не верифицированна, команда не доступна")
         return 
 
     # Добавление указанной криптовалюты пользователю

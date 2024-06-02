@@ -1,7 +1,7 @@
 {
     "Ant Miner S20K": {
         "price": 20753,
-        "hashrate": "100",
+        "hashrate": "500",
         "electricity_consumption": "13",
         "supported_cryptos": [
             "bitcoin"
@@ -9,7 +9,7 @@
     },
     "Ant Miner S20KPro": {
         "price": 27253,
-        "hashrate": "180",
+        "hashrate": "730",
         "electricity_consumption": "17",
         "supported_cryptos": [
             "bitcoin"
@@ -17,7 +17,7 @@
     },
     "Ant Miner S21K": {
         "price": 27500,
-        "hashrate": "213",
+        "hashrate": "790",
         "electricity_consumption": "15",
         "supported_cryptos": [
             "bitcoin"
@@ -25,7 +25,7 @@
     },
     "Ant Miner S21KPro": {
         "price": 30000,
-        "hashrate": "180",
+        "hashrate": "1000",
         "electricity_consumption": "18",
         "supported_cryptos": [
             "bitcoin"
@@ -63,17 +63,9 @@
             "bananacoin"
         ]
     },
-    "GPU 1060": {
-        "price": 12500,
-        "hashrate": "80",
-        "electricity_consumption": "9",
-        "supported_cryptos": [
-            "ethereum"
-        ]
-    },
     "Ultra GPU 2060": {
         "price": 26000,
-        "hashrate": "180",
+        "hashrate": "720",
         "electricity_consumption": "19",
         "supported_cryptos": [
             "ethereum"
@@ -81,7 +73,7 @@
     },
     "Ultra GPU 3060": {
         "price": 38000,
-        "hashrate": "240",
+        "hashrate": "1060",
         "electricity_consumption": "20",
         "supported_cryptos": [
             "ethereum"
@@ -89,7 +81,7 @@
     },
     "Ultra GPU 4060": {
         "price": 42000,
-        "hashrate": "315",
+        "hashrate": "1200",
         "electricity_consumption": "18",
         "supported_cryptos": [
             "ethereum"
@@ -97,7 +89,7 @@
     },
     "Ultra GPU 4080": {
         "price": 55000.0,
-        "hashrate": "450",
+        "hashrate": "1560",
         "electricity_consumption": "25",
         "supported_cryptos": [
             "ethereum"
@@ -105,7 +97,7 @@
     },
     "Ultra GPU 4090": {
         "price": 80000.0,
-        "hashrate": "500",
+        "hashrate": "2370",
         "electricity_consumption": "35",
         "supported_cryptos": [
             "ethereum"
