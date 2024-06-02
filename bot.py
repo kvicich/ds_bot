@@ -870,16 +870,13 @@ async def bot_stats_cmd(inter: disnake.ApplicationCommandInteraction):
     # Информация о текущей гильдии
     guild = inter.guild
 
-    # Формируем сообщение
-    message = (
+    await inter.followup.send((
         f"Информация о боте:\n"
         f"Имя бота: {bot.user}\n"
         f"Имя гильдии: {guild.name}, Айди гильдии: {guild.id}, Участников: {guild.member_count}\n"
         f"Пинг: {latency} ms\n"
         f"Аптайм: {uptime_str}"
-    )
-
-    await inter.followup.send(message)
+    ))
 
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
