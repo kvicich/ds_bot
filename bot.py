@@ -795,8 +795,8 @@ async def work_cmd(inter):
         num1 = random.randint(10, 80)
         num2 = random.randint(10, 80)
     else:
-        num1 = random.randint(10, 50)
-        num2 = random.randint(10, 70)
+        num1 = random.randint(6, 50)
+        num2 = random.randint(3, 70)
 
     # Выбираем случайный знак операции
     if difficulty == 'easy' or 'medium':
@@ -840,11 +840,11 @@ async def work_cmd(inter):
         if abs(user_answer - correct_answer) < 0.01:  # Учитываем погрешность из-за операций с плавающей точкой
             # Определяем количество монет в зависимости от сложности примера
             if difficulty == 'easy':
-                reward = 20
+                reward = 25
             elif difficulty == 'medium':
-                reward = 45
+                reward = 40
             else:
-                reward = 70
+                reward = 80
 
             # Добавляем монеты пользователю
             user_data = load_user_data(inter.guild.id, inter.author.id)
