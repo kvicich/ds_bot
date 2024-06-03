@@ -916,6 +916,23 @@ async def bot_stats_cmd(inter: disnake.ApplicationCommandInteraction):
         f"Аптайм: {uptime_str}"
     ))
 
+@bot.slash_command(name='random_msg', description="Рандомное сообщение")
+async def msg(inter):
+    message = await randy_random()
+    await inter.response.send_message(message)
+
+@bot.slash_command(name='buy_apart', description="Позволяет купить аппартаменты")
+async def buy_apart(inter):
+    # Загрузка данных пользователя
+    user_id = str(inter.author.id)
+    server_id = inter.guild.id
+    user_data = load_user_data(server_id, user_id)
+
+    # Проверяем на соответствие уровню допуска
+    if not check_access_level("admin", user_id, server_id):
+        await inter.response.send_message("У вас нет доступа к этой команде.")
+        return
+    
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
     token_file_path = os.path.join(token_directory, "TOKEN.txt")
