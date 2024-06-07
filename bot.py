@@ -950,7 +950,7 @@ async def buy_business(inter, apart: str):
         else:
             await inter.response.send_message("У вас недостаточно средств для покупки этих апартаментов.")
     else:
-        await inter.response.send_message("Данные апартаменты не существую.\n"
+        await inter.response.send_message("Данные апартаменты не существуюn.\n"
                                            "Используйте /apart_info для просмотра списка апартаментов")
 
 # Функция для получения информации о апатартаментах
