@@ -1,6 +1,6 @@
 {
     "Ant Miner S20K": {
-        "price": 20753,
+        "price": 20720,
         "hashrate": "500",
         "electricity_consumption": "13",
         "supported_cryptos": [
@@ -8,16 +8,16 @@
         ]
     },
     "Ant Miner S20KPro": {
-        "price": 27253,
-        "hashrate": "730",
+        "price": 27660,
+        "hashrate": "778",
         "electricity_consumption": "17",
         "supported_cryptos": [
             "bitcoin"
         ]
     },
     "Ant Miner S21K": {
-        "price": 27500,
-        "hashrate": "790",
+        "price": 27000,
+        "hashrate": "732",
         "electricity_consumption": "15",
         "supported_cryptos": [
             "bitcoin"
@@ -63,7 +63,7 @@
             "bananacoin"
         ]
     },
-    "Ultra GPU 2060": {
+    "Ultra GPU 4060": {
         "price": 26000,
         "hashrate": "720",
         "electricity_consumption": "19",
@@ -71,7 +71,7 @@
             "ethereum"
         ]
     },
-    "Ultra GPU 3060": {
+    "Ultra GPU 4070": {
         "price": 38000,
         "hashrate": "1060",
         "electricity_consumption": "20",
@@ -79,7 +79,7 @@
             "ethereum"
         ]
     },
-    "Ultra GPU 4060": {
+    "Ultra GPU 4070 Ti Super": {
         "price": 42000,
         "hashrate": "1200",
         "electricity_consumption": "18",
@@ -96,9 +96,9 @@
         ]
     },
     "Ultra GPU 4090": {
-        "price": 80000.0,
+        "price": 75778.0,
         "hashrate": "2370",
-        "electricity_consumption": "35",
+        "electricity_consumption": "33",
         "supported_cryptos": [
             "ethereum"
         ]
