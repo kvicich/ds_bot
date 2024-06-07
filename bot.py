@@ -695,9 +695,9 @@ async def start_mining_cmd(inter, selected_crypto: str = None):
     
     mining_tasks[(server_id, user_id)] = asyncio.create_task(mine_coins(server_id, user_id, selected_crypto))
     if "apart" in user_data:
-        await inter.response.send_message("Майнинг успешно запущен!\n:bulb: У вас есть апартаменты, ваш доход умножен в 1,5 раза")
+        await inter.response.send_message("Майнинг успешно запущен!\n:bulb: У вас есть апартаменты, ваш доход умножен в 1,2 раза")
     else:
-        await inter.response.send_message("Майнинг успешно запущен!\n:bulb: С апартаментами доход умножается в 1,5 раза")
+        await inter.response.send_message("Майнинг успешно запущен!\n:bulb: С апартаментами доход умножается в 1,2 раза")
 
 async def mine_coins(server_id, user_id, selected_crypto=None):
     while True:
@@ -718,6 +718,8 @@ async def mine_coins(server_id, user_id, selected_crypto=None):
                     coins_mined = hashrate / 20000
                 elif selected_crypto == "bananacoin":
                     coins_mined = hashrate / 150
+                if "apart" in user_data:
+                    coins_mined *= 1.2
 
                 user_data[selected_crypto] = user_data.get(selected_crypto, 0) + coins_mined
                 user_data["money"] -= consumption
