@@ -1,47 +1,47 @@
 {
     "Постомат bananies": {
-        "price": 5000.0,
-        "income": "200",
-        "consumption": "93"
+        "price": 27000.0,
+        "income": 200,
+        "consumption": 50
     },
     "Пункт выдачи bananies": {
         "price": 45000.0,
-        "income": "550",
-        "consumption": "150"
+        "income": 350,
+        "consumption": 75
     },
     "Склад bananies": {
         "price": 95000.0,
-        "income": "1350",
-        "consumption": "270"
+        "income": 800,
+        "consumption": 150
     },
     "Магазин 'продукты'": {
         "price": 125000.0,
-        "income": "730",
-        "consumption": "130"
+        "income": 1000,
+        "consumption": 200
     },
-    "Центр семейного разлечения 'весёлые бананы'": {
+    "Центр семейного развлечения 'весёлые бананы'": {
         "price": 500000.0,
-        "income": "1042",
-        "consumption": "130"
+        "income": 4000,
+        "consumption": 800
     },
     "Кафе кофеёк": {
         "price": 725000.0,
-        "income": "1680",
-        "consumption": "230"
+        "income": 6000,
+        "consumption": 1000
     },
     "Банастикс": {
         "price": 1050000.0,
-        "income": "2050",
-        "consumption": "255"
+        "income": 9000,
+        "consumption": 1300
     },
     "Гипермаркет полоска": {
         "price": 1859000.0,
-        "income": "3700",
-        "consumption": "510"
+        "income": 15000,
+        "consumption": 2000
     },
     "Торговый центр 'Петрушка'": {
         "price": 2000000.0,
-        "income": "500",
-        "consumption": "370"
+        "income": 16000,
+        "consumption": 2100
     }
 }
