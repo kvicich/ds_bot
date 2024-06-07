@@ -8,7 +8,7 @@ import time
 import asyncio
 
 # Переменные
-start_time = time.time() # Время запуска (для /bot_stats)
+START_TIME = time.time() # Время запуска (для /bot_stats)
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
 WORK_COOLDOWN = 150 # Время в секундах между попытками зароботка для /sidejob
 WORK_INCOME = 35, 234 # Заработок с /sidejob
@@ -24,9 +24,9 @@ INFO_COOLDOWN = 120 # Время в секундах между запросом
 APART_COOLDOWN = 3600 # Время в секундах для "взыскания" налогов
 APART_DATA_PATH = "apart_data.json" # Файл с данными о апартаментах
 SAVE_LOGS = True # Установите в False, если не хотите сохранять логи в файл
-under_construction = "working.txt" # Сообщения для команд в разработке
+UNDER_CONSTRUCTION = "working.txt" # Сообщения для команд в разработке
 mining_tasks = {} # Задачи для майнинга, не пихайте туда ничего
-owner_id = "822112444973056011" # Сюда запишите айди овнера бота, сейчас стоит мой
+OWNER_ID = "822112444973056011" # Сюда запишите айди овнера бота, сейчас стоит мой
 VERIFIED_GUILDS = ([1203755517072252989])
 
 def setup_logging():
@@ -124,18 +124,18 @@ def save_access_data(access_data):
 def check_access_level(access_level: str, user_id: str, server_id: int) -> bool:
     access_data = load_access_data()
     if access_level.lower() == "owner":
-        return user_id == owner_id
+        return user_id == OWNER_ID
     elif access_level.lower() == "admin":
-        return user_id in access_data["admins"] or user_id == owner_id
+        return user_id in access_data["admins"] or user_id == OWNER_ID
     elif access_level.lower() == "tester":
-        return user_id in access_data["testers"] or user_id in access_data["admins"] or user_id == owner_id
+        return user_id in access_data["testers"] or user_id in access_data["admins"] or user_id == OWNER_ID
     else:
         return False
 
 # Команда для смены уровня доступа пользователя
 @bot.slash_command(name='change_access', description="Изменяет уровень доступа пользователя.")
 async def change_access(inter, user_id: str, new_level: str):
-    if inter.author.id == owner_id:
+    if inter.author.id == OWNER_ID:
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
     
@@ -186,7 +186,7 @@ async def test_adm_cmd(inter):
 
 # Асинхронная функция для генерации случайного сообщения
 async def randy_random():
-    with open(under_construction, "r", encoding='utf-8') as file:
+    with open(UNDER_CONSTRUCTION, "r", encoding='utf-8') as file:
         messages = file.readlines()
         message = random.choice(messages).strip()
         return message
@@ -896,7 +896,7 @@ async def bot_stats_cmd(inter: disnake.ApplicationCommandInteraction):
 
     # Аптайм
     current_time = time.time()
-    uptime_seconds = int(current_time - start_time)
+    uptime_seconds = int(current_time - START_TIME)
     uptime_str = time.strftime("%H:%M:%S", time.gmtime(uptime_seconds))
 
     # Информация о текущей гильдии
