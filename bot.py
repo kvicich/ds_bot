@@ -121,7 +121,7 @@ def save_access_data(access_data):
         json.dump(access_data, f, indent=4)
 
 # Обновленная функция для проверки уровня доступа пользователя
-def check_access_level(access_level: str, user_id: str, server_id: int) -> bool:
+def check_access_level(access_level: str, user_id: str) -> bool:
     access_data = load_access_data()
     if access_level.lower() == "owner":
         return user_id == OWNER_ID
@@ -138,10 +138,8 @@ async def change_access(inter, user_id: str, new_level: str):
     if inter.author.id == OWNER_ID:
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
-    
-    guild_id = inter.guild_id
 
-    result = change_access_level(int(user_id), int(guild_id), new_level)
+    result = change_access_level(int(user_id), new_level)
     await inter.response.send_message(result)
 
 # Функция для смены уровня доступа пользователя на уровне бота
@@ -174,7 +172,7 @@ async def test_adm_cmd(inter):
     user_access_level = None
 
     for level in access_levels:
-        if check_access_level(level, user_id, server_id):
+        if check_access_level("admin", user_id):
             user_access_level = level
             break
 
@@ -321,7 +319,7 @@ CRYPTO_LIST = load_crypto_prices()
 async def change_crypto_prices(inter):
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
 
-    if not check_access_level("admin", user_id, server_id):
+    if not check_access_level("admin", user_id):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
     
@@ -341,7 +339,7 @@ async def give_money(inter, member: disnake.Member, amount: int):
     user_data = load_user_data(server_id, user_id)
 
     # Проверяем на соответствие уровню допуска
-    if not check_access_level("admin", user_id, server_id):
+    if not check_access_level("admin", user_id):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
 
@@ -365,7 +363,7 @@ async def take_money(inter, member: disnake.Member, amount: int):
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
 
-    if not check_access_level("admin", user_id, server_id):
+    if not check_access_level("admin", user_id):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
     
@@ -399,7 +397,7 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
 
-    if not check_access_level("admin", user_id, server_id):
+    if not check_access_level("admin", user_id):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
     
@@ -428,7 +426,7 @@ async def take_crypto(inter, currency: str, member: disnake.Member, amount: int)
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
 
-    if not check_access_level("admin", user_id, server_id):
+    if not check_access_level("admin", user_id):
         await inter.response.send_message("У вас нет доступа к этой команде.")
         return
     
