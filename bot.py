@@ -1035,6 +1035,7 @@ def main():
     bot.last_steal_time = {}
     bot.loop.create_task(crypto_prices_generator()) # Запускаем генератор цен криптовалюты
     bot.loop.create_task(update_businesses()) # Запускаем проверку бизнесов
+    bot.lopp.create_task(update_apart()) # Запускаем проверку апартаментов (всем платит налоги!!!)
     bot.run(get_token())
 
 if __name__ == "__main__":
