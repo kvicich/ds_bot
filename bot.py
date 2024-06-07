@@ -21,6 +21,8 @@ MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
 BUSINESS_DATA_PATH = "business_data.json" # Файл с информацией о майнерах
 BUSINESS_COOLDOWN = 900  # Время обновления бизнесов в секундах 60 секунд = 1 минута
 INFO_COOLDOWN = 120 # Время в секундах между запросом информации о майнерах/бизнесах
+APART_COOLDOWN = 3600 # Время в секундах для "взыскания" налогов
+APART_DATA_PATH = "apart_data.json" # Файл с данными о апартаментах
 SAVE_LOGS = True # Установите в False, если не хотите сохранять логи в файл
 under_construction = "working.txt" # Сообщения для команд в разработке
 mining_tasks = {} # Задачи для майнинга, не пихайте туда ничего
@@ -921,17 +923,86 @@ async def msg(inter):
     message = await randy_random()
     await inter.response.send_message(message)
 
-@bot.slash_command(name='buy_apart', description="Позволяет купить аппартаменты")
-async def buy_apart(inter):
-    # Загрузка данных пользователя
-    user_id = str(inter.author.id)
-    server_id = inter.guild.id
-    user_data = load_user_data(server_id, user_id)
+# Загружаем данные апартаментов
+def load_apart_data():
+    with open(APART_DATA_PATH, "r", encoding="UTF-8") as f:
+        return json.load(f)
 
-    # Проверяем на соответствие уровню допуска
-    if not check_access_level("admin", user_id, server_id):
-        await inter.response.send_message("У вас нет доступа к этой команде.")
-        return
+@bot.slash_command(name='buy_apart', description="Купить апартаменты")
+async def buy_business(inter, apart: str):
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
+    apart_data = load_apart_data()
+    user_data = load_user_data(server_id, user_id)
+    
+    if apart in apart_data:
+        apart_info = apart_data[apart]
+        if apart_info["price"] <= user_data.get("money", 0):
+            user_data["money"] -= apart_info["price"]
+            if "apart" not in user_data:
+                user_data["apart"] = {}
+            user_data["apart"][apart] = user_data["apart"].get(apart, 0) + 1
+            save_user_data(server_id, user_id, user_data)
+            await inter.response.send_message(f"Апартаменты {apart} успешно куплены!")
+        else:
+            await inter.response.send_message("У вас недостаточно средств для покупки этих апартаментов.")
+    else:
+        await inter.response.send_message("Данные апартаменты не существую.\n"
+                                           "Используйте /apart_info для просмотра списка апартаментов")
+
+# Функция для получения информации о апатартаментах
+def get_apart_info(apart_data, apart):
+    return f"{apart}: Цена - {apart_data[apart]['price']} :coin:, Уровень - {apart_data[apart]['level']}, Налоги - {apart_data[apart]['taxes']} :coin: в час"
+
+# Слеш-команда для просмотра информации о апартаментах
+@bot.slash_command(name='apart_info', description="Просмотр информации о доступных апартаментах")
+async def apart_info(inter):
+    aparts_data = load_apart_data()
+    await inter.response.send_message("Доступные апартаменты: \n")
+    apart_info = ""
+    for apart in aparts_data:
+        apart_info += get_apart_info(aparts_data, apart) + "\n"
+    await send_long_message(inter.channel, apart_info)
+
+@bot.slash_command(name='sell_apart', description="Продать апартаменты")
+async def sell_apart(inter, apart: str):
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
+    user_data = load_user_data(server_id, user_id)
+    
+    if "apart" in user_data and apart in user_data["apart"]:
+        apart_data = load_apart_data()
+        if apart in apart_data:
+            apart_info = apart_data[apart]
+            user_money = user_data.get("money", 0)
+            user_apart_count = user_data["apart"][apart]
+            user_data["money"] = user_money + user_apart_count * apart_info["price"] * 0.8
+            del user_data["apart"][apart]
+            save_user_data(server_id, user_id, user_data)
+            await inter.response.send_message(f"Апартаменты {apart} успешно проданы!")
+        else:
+            await inter.response.send_message("Данные апартаменты не существуют.")
+    else:
+        await inter.response.send_message("У вас нет таких апартаментов.")
+
+# Функция для обновления состояния бизнесов
+async def update_apart():
+    while True:
+        await asyncio.sleep(APART_COOLDOWN)
+        apart_data = load_apart_data()
+        all_user_data = load_all_user_data()
+        for server_id, users_data in all_user_data.items():
+            for user_id, user_data in users_data.items():
+                if "apart" in user_data:
+                    user_apart = user_data["apart"]
+                    for apart_name, apart_count in user_apart.items():
+                        if apart_name in apart_data:
+                            apart_info = apart_data[apart_name]
+                            taxes = float(apart_info["taxes"])
+                            user_money = user_data.get("money", 0)
+                            user_data["money"] = user_money * apart_count - taxes * apart_count
+                            save_user_data(server_id, user_id, user_data)
+                            logger.info(f"Обработаны апартаменты пользователя с айди: {user_id}")
+                        else:
+                            logger.info(f"Ошибка: Информация о апартаментах '{apart_name}' не найдена.")
     
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
