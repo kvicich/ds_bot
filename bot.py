@@ -880,12 +880,19 @@ async def work_cmd(inter):
                 reward = 40
             else:
                 reward = 80
-
-            # Добавляем монеты пользователю
-            user_data = load_user_data(inter.guild.id, inter.author.id)
-            user_data['money'] = user_data.get('money', 0) + reward
-            save_user_data(inter.guild.id, inter.author.id, user_data)
-            await inter.followup.send(f'Верно! Вы получаете {reward} монет.', ephemeral=True)
+            if 'apart' in user_data:
+                reward *= 1.5
+                # Добавляем монеты пользователю
+                user_data = load_user_data(inter.guild.id, inter.author.id)
+                user_data['money'] = user_data.get('money', 0) + reward
+                save_user_data(inter.guild.id, inter.author.id, user_data)
+                await inter.followup.send(f'Верно! Вы получаете {reward} монет.\n:bulb: Ваша награда умножена в 1,5 раза', ephemeral=True)
+            else:
+                # Добавляем монеты пользователю
+                user_data = load_user_data(inter.guild.id, inter.author.id)
+                user_data['money'] = user_data.get('money', 0) + reward
+                save_user_data(inter.guild.id, inter.author.id, user_data)
+                await inter.followup.send(f'Верно! Вы получаете {reward} монет.\n:bulb: С апартаментами награда умножается в 1,5 раза', ephemeral=True)
         else:
             await inter.followup.send('Неверно. Попробуйте еще раз.', ephemeral=True)
     except asyncio.TimeoutError:
