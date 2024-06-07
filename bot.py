@@ -165,8 +165,7 @@ def change_access_level(user_id: str, guild_id, new_level: str):
 
 @bot.slash_command(name='test_access', description="Проверяет уровень доступа пользователя.")
 async def test_adm_cmd(inter):
-    user_id = str(inter.author.id)
-    server_id = int(inter.guild.id)
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
 
     if server_id not in VERIFIED_GUILDS:
         return "Ваша гильдия не верифицированна, команда не доступна"
@@ -201,8 +200,7 @@ async def on_ready():
 # Команда для подработки
 @bot.slash_command(name='sidejob', description="Работка.")
 async def SideJob_cmd(inter):
-    user_id = str(inter.user.id)
-    server_id = str(inter.guild_id)
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
     current_time = time.time()
     last_work_time = bot.last_work_time.get(server_id, {})
     if user_id in last_work_time:
@@ -228,8 +226,7 @@ async def SideJob_cmd(inter):
 # Команда для попытки кражи
 @bot.slash_command(name='steal', description="Попытка украсть что-то.")
 async def steal_cmd(inter):
-    user_id = str(inter.user.id)
-    server_id = str(inter.guild_id)
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
     current_time = time.time()
     last_steal_time = bot.last_steal_time.get(server_id, {})
     if user_id in last_steal_time:
@@ -322,8 +319,7 @@ CRYPTO_LIST = load_crypto_prices()
 
 @bot.slash_command(name="change_crypto_prices", description='Сменить цены криптовалют.')
 async def change_crypto_prices(inter):
-    user_id = str(inter.author.id)
-    server_id = inter.guild.id
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
 
     if not check_access_level("admin", user_id, server_id):
         await inter.response.send_message("У вас нет доступа к этой команде.")
@@ -341,8 +337,7 @@ async def change_crypto_prices(inter):
 @bot.slash_command(name='give_money', description="Выдает деньги пользователю.")
 async def give_money(inter, member: disnake.Member, amount: int):
     # Загрузка данных пользователя
-    user_id = str(inter.author.id)
-    server_id = inter.guild.id
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
 
     # Проверяем на соответствие уровню допуска
@@ -367,8 +362,7 @@ async def give_money(inter, member: disnake.Member, amount: int):
 @bot.slash_command(name='take_money', description="Отнимает деньги у пользователя.")
 async def take_money(inter, member: disnake.Member, amount: int):
     # Загрузка данных пользователя
-    user_id = str(member.id)
-    server_id = str(inter.guild.id)
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
 
     if not check_access_level("admin", user_id, server_id):
@@ -402,8 +396,7 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
         return
 
     # Загрузка данных пользователя
-    user_id = str(member.id)
-    server_id = int(inter.guild.id)
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
 
     if not check_access_level("admin", user_id, server_id):
@@ -432,8 +425,7 @@ async def take_crypto(inter, currency: str, member: disnake.Member, amount: int)
         return
 
     # Загрузка данных пользователя
-    user_id = str(member.id)
-    server_id = str(inter.guild.id)
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
 
     if not check_access_level("admin", user_id, server_id):
@@ -468,8 +460,7 @@ def load_promo_codes():
 
 @bot.slash_command(name="promo", description='Позволяет ввести промокод.')
 async def promo(inter, code: str):
-    server_id = str(inter.guild.id)
-    user_id = str(inter.author.id)
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
     used_promocodes = user_data.get('used_promocodes', [])
     promo_codes = load_promo_codes()  
@@ -512,8 +503,7 @@ async def exchange_cmd(inter, source_currency: str, target_currency: str, amount
     # Обрабатываем случай обмена денег на криптовалюту
     if source_currency.lower() == "money":
         # Проверяем, что пользователь имеет достаточно денег для обмена
-        user_id = str(inter.author.id)
-        server_id = str(inter.guild.id)
+        server_id, user_id = str(inter.guild_id), str(inter.user.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get("money", 0) < amount:
             await inter.response.send_message("У вас недостаточно денег для обмена.")
@@ -537,8 +527,7 @@ async def exchange_cmd(inter, source_currency: str, target_currency: str, amount
     # Обрабатываем случай обмена криптовалюты на деньги
     elif target_currency.lower() == "money":
         # Проверяем, что пользователь имеет достаточно криптовалюты для обмена
-        user_id = str(inter.author.id)
-        server_id = str(inter.guild.id)
+        server_id, user_id = str(inter.guild_id), str(inter.user.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get(source_currency.lower(), 0) < amount:
             await inter.response.send_message(f"У вас недостаточно {source_currency} для обмена.")
@@ -566,8 +555,7 @@ async def exchange_cmd(inter, source_currency: str, target_currency: str, amount
         target_rate = CRYPTO_LIST[target_currency.lower()]["price"]
 
         # Проверяем, что пользователь имеет достаточно криптовалюты для обмена
-        user_id = str(inter.author.id)
-        server_id = str(inter.guild.id)
+        server_id, user_id = str(inter.guild_id), str(inter.user.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get(source_currency.lower(), 0) < amount:
             await inter.response.send_message(f"У вас недостаточно {source_currency} для обмена.")
@@ -610,8 +598,7 @@ async def buy_miner_cmd(inter, miner: str):
 # Слеш-команда для просмотра информации о пользователе
 @bot.slash_command(name='user_info', description="Просмотр информации о пользователе")
 async def user_info_cmd(inter, user: disnake.User = None):
-    user_id = str(user.id) if user else str(inter.user.id)
-    server_id = str(inter.guild_id)
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
     balance = user_data.get("money", 0)
     crypto_wallet = {key: value for key, value in user_data.items() if key in CRYPTO_LIST}
@@ -665,8 +652,7 @@ async def miners_info_cmd(inter):
 
 @bot.slash_command(name='start_mining', description="Запуск майнинга")
 async def start_mining_cmd(inter, selected_crypto: str = None):
-    server_id = str(inter.guild_id)
-    user_id = str(inter.user.id)
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
 
     if (server_id, user_id) in mining_tasks:
@@ -729,9 +715,8 @@ async def mine_coins(server_id, user_id, selected_crypto=None):
 
 @bot.slash_command(name='stop_mining', description="Остановка майнинга")
 async def stop_mining_cmd(inter):
-    server_id = str(inter.guild_id)
-    user_id = str(inter.user.id)
-    
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
+
     if (server_id, user_id) in mining_tasks:
         mining_task = mining_tasks[(server_id, user_id)]
         mining_task.cancel()
@@ -921,7 +906,7 @@ async def bot_stats_cmd(inter: disnake.ApplicationCommandInteraction):
     guild = inter.guild
     server_id = inter.guild.id
 
-    # Формируем статус гильдии
+    # Проверяем статус гильдии
     if server_id not in VERIFIED_GUILDS:
         guild_status = "Не верифицирована"
     else:
