@@ -633,8 +633,12 @@ async def user_info_cmd(inter, user: disnake.User = None):
         business_info = "Бизнесы:\n"
         for business, count in user_data["business"].items():
             business_info += f"{business}: {count}\n"
+    if "apart" in user_data:
+        apart_info = "Апартаменты:\n"
+        for apart, count in user_data["apart"].items():
+            apart_info += f"{apart}: {count}"
     
-    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}\n\n{crypto_str}\n{miners_info}\n{business_info}')
+    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}\n\n{crypto_str}\n{miners_info}\n{business_info}\n{apart_info}')
 
 # Загружаем данные майнеров
 def load_miners_data():
