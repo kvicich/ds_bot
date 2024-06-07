@@ -694,7 +694,10 @@ async def start_mining_cmd(inter, selected_crypto: str = None):
         return
     
     mining_tasks[(server_id, user_id)] = asyncio.create_task(mine_coins(server_id, user_id, selected_crypto))
-    await inter.response.send_message("Майнинг успешно запущен!")
+    if "apart" in user_data:
+        await inter.response.send_message("Майнинг успешно запущен!\n:bulb: У вас есть апартаменты, ваш доход умножен в 1,5 раза")
+    else:
+        await inter.response.send_message("Майнинг успешно запущен!\n:bulb: С апартаментами доход умножается в 1,5 раза")
 
 async def mine_coins(server_id, user_id, selected_crypto=None):
     while True:
@@ -821,6 +824,8 @@ async def update_businesses():
 async def work_cmd(inter):
     # Выбираем случайную сложность примера
     difficulty = random.choice(['easy', 'medium', 'hard'])
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
+    user_data = load_user_data(server_id, user_id)
 
     # Генерируем пример в зависимости от сложности
     if difficulty == 'easy':
@@ -1042,7 +1047,7 @@ def main():
     bot.last_steal_time = {}
     bot.loop.create_task(crypto_prices_generator()) # Запускаем генератор цен криптовалюты
     bot.loop.create_task(update_businesses()) # Запускаем проверку бизнесов
-    bot.lopp.create_task(update_apart()) # Запускаем проверку апартаментов (всем платит налоги!!!)
+    bot.loop.create_task(update_apart()) # Запускаем проверку апартаментов (всем платит налоги!!!)
     bot.run(get_token())
 
 if __name__ == "__main__":
