@@ -143,14 +143,10 @@ async def change_access(inter, user_id: str, new_level: str):
     await inter.response.send_message(result)
 
 # Функция для смены уровня доступа пользователя на уровне бота
-def change_access_level(user_id: str, guild_id, new_level: str):
+def change_access_level(user_id: str, new_level: str):
     access_data = load_access_data()
     if new_level.lower() not in ["admin", "tester"]:
         return "Неизвестный или уровень доступа."
-    
-    if guild_id not in VERIFIED_GUILDS:
-        return "Ваша гильдия не верифицированна, команда не доступна"
-
     if new_level.lower() == "admin":
         access_data["admins"].append(user_id)
         access_data["testers"] = [uid for uid in access_data["testers"] if uid != user_id]
