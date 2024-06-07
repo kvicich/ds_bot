@@ -16,3 +16,6 @@ bug - 0.01 =+ bitcoin
 cat_control - 5 =+ bananacoin
 exception - 586 =+ money
 logs - 0.02 =+ bitcoin
+apart - 0.045 =+ bitcoin
+v2 - 300 =+ money
+v3 - 450 =+ money
