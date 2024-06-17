@@ -980,8 +980,7 @@ async def sell_apart(inter, apart: str):
     else:
         await inter.response.send_message("У вас нет таких апартаментов.")
 
-# Функция для обновления состояния бизнесов
-async def update_apart():
+async def update_apart(): # Ворует у игроков деньги или апартаменты если денег нету
     while True:
         await asyncio.sleep(APART_COOLDOWN)
         apart_data = load_apart_data()
@@ -990,12 +989,22 @@ async def update_apart():
             for user_id, user_data in users_data.items():
                 if "apart" in user_data:
                     user_apart = user_data["apart"]
-                    for apart_name, apart_count in user_apart.items():
+                    for apart_name, apart_count in list(user_apart.items()):
                         if apart_name in apart_data:
                             apart_info = apart_data[apart_name]
                             taxes = float(apart_info["taxes"])
                             user_money = user_data.get("money", 0)
-                            user_data["money"] = user_money * apart_count - taxes * apart_count
+
+                            total_taxes = taxes * apart_count
+                            new_balance = user_money - total_taxes
+
+                            if new_balance >= 0:
+                                user_data["money"] = new_balance
+                            else:
+                                # Удаление апартаментов, если не хватает средств на налоги
+                                del user_apart[apart_name]
+                                logger.info(f"Пользователь с айди {user_id} потерял апартаменты '{apart_name}' из-за нехватки средств.")
+
                             save_user_data(server_id, user_id, user_data)
                             logger.info(f"Обработаны апартаменты пользователя с айди: {user_id}")
                         else:
