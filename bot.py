@@ -340,7 +340,7 @@ async def give_money(inter, member: disnake.Member, amount: int):
         return
 
     if server_id not in VERIFIED_GUILDS:
-        await inter.response.sens_message("Ваша гильдия не верифицированна, команда не доступна")
+        await inter.response.send_message("Ваша гильдия не верифицированна, команда не доступна")
         return 
 
     # Добавление денег пользователю
