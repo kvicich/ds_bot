@@ -191,7 +191,6 @@ async def on_ready():
     logger.info("Активность и статус бота изменены")
     logger.info(f"Бот запущен, его имя {bot.user}")
 
-
 # Команда для подработки
 @bot.slash_command(name='sidejob', description="Работка.")
 async def SideJob_cmd(inter):
@@ -282,8 +281,8 @@ def generate_crypto_prices():
             change2 = random.uniform(1.01, 1.3)
             change_percent *= random.uniform(change1, change2)  # Редкое изменение от -20% до 20%
         crypto_list[currency]['price'] *= (1 + change_percent / 100)  # Применяем изменение
-        # Округляем цены криптовалют до нуля знаков после запятой/точки
-        crypto_list[currency]['price'] = round(crypto_list[currency]['price'], 0)
+        # Округляем цены криптовалют до 2 знаков после запятой/точки
+        crypto_list[currency]['price'] = round(crypto_list[currency]['price'], 2)
     with open("crypto_prices.json", "w") as file:
         json.dump(crypto_list, file)
     logger.info("Изменились цены криптовалют!")
