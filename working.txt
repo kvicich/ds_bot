@@ -1,5 +1,6 @@
 :hammer_pick: В работе :hammer_pick:
 :hammer_pick: Under construction! :hammer_pick:
 :satellite: Улавливаем обновления... :satellite:
-:hourglass: Разработчик выходит из запоя... :hourglass_flowing_sand:
 :lock: Закрыто до выхода обновления! :lock:
+:flashlight: Ищем обновления... :flashlight:
+:mag: Разглядываем говнокод в поиске обновлений... :mag:
