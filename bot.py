@@ -187,9 +187,10 @@ async def randy_random():
 # Событие выполняющееся после полного запуска бота
 @bot.event
 async def on_ready():
-    logger.info(f"Бот запущен, его имя {bot.user}")
     await bot.change_presence(activity=disnake.Game(name="Заёбывает юзеров"), status=disnake.Status.idle)
     logger.info("Активность и статус бота изменены")
+    logger.info(f"Бот запущен, его имя {bot.user}")
+
 
 # Команда для подработки
 @bot.slash_command(name='sidejob', description="Работка.")
