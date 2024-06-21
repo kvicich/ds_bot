@@ -21,3 +21,4 @@ v2 - 300 =+ money
 v3 - 450 =+ money
 xeon - 8 =+ bananacoin
 modal - 0.5 =+ ethereum
+embed - 0.2 =+ bitcoin

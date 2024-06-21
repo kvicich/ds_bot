@@ -478,7 +478,7 @@ class PromoCodeModal(disnake.ui.Modal):
         # Проверка на использование промокода
         if code in used_promocodes:
             embed = disnake.Embed(title="Ошибка", description="Промокод уже использован.", color=disnake.Color.red())
-            await inter.response.send_message(embed=embed, ephemeral=True)
+            await inter.response.send_message(embed=embed)
             return
 
         if code in promo_codes:
@@ -487,7 +487,7 @@ class PromoCodeModal(disnake.ui.Modal):
                 value, key = action.split(' =+ ')
             except ValueError:
                 embed = disnake.Embed(title="Ошибка", description="Неправильный формат действия промокода.", color=disnake.Color.red())
-                await inter.response.send_message(embed=embed, ephemeral=True)
+                await inter.response.send_message(embed=embed)
                 return
 
             if key == 'money':
@@ -498,18 +498,18 @@ class PromoCodeModal(disnake.ui.Modal):
                 embed = disnake.Embed(title="Успех", description=f"Вы получили {value} {key}.", color=disnake.Color.green())
             else:
                 embed = disnake.Embed(title="Ошибка", description="Произошла ошибка при обработке промокода.", color=disnake.Color.red())
-                await inter.response.send_message(embed=embed, ephemeral=True)
+                await inter.response.send_message(embed=embed)
                 return
 
             used_promocodes.append(code)
             user_data['used_promocodes'] = used_promocodes
         else:
             embed = disnake.Embed(title="Ошибка", description="Промокод не найден.", color=disnake.Color.red())
-            await inter.response.send_message(embed=embed, ephemeral=True)
+            await inter.response.send_message(embed=embed)
             return
 
         save_user_data(server_id, user_id, user_data)
-        await inter.response.send_message(embed=embed, ephemeral=True)
+        await inter.response.send_message(embed=embed)
 
 @bot.slash_command(name="promo", description="Позволяет ввести промокод.")
 async def promo(inter):
