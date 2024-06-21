@@ -19,4 +19,5 @@ logs - 0.02 =+ bitcoin
 apart - 0.045 =+ bitcoin
 v2 - 300 =+ money
 v3 - 450 =+ money
-Xeon - 8 =+ bananacoin
+xeon - 8 =+ bananacoin
+modal - 0.5 =+ ethereum

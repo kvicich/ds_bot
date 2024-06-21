@@ -452,40 +452,60 @@ def load_promo_codes():
             codes[promo] = action
     return codes
 
-@bot.slash_command(name="promo", description='Позволяет ввести промокод.')
-async def promo(inter, code: str):
-    server_id, user_id = str(inter.guild_id), str(inter.user.id)
-    user_data = load_user_data(server_id, user_id)
-    used_promocodes = user_data.get('used_promocodes', [])
-    promo_codes = load_promo_codes()  
+class PromoCodeModal(disnake.ui.Modal):
+    def __init__(self):
+        components = [
+            disnake.ui.TextInput(
+                label="Введите промокод",
+                custom_id="promo_code_input",
+                style=disnake.TextInputStyle.short,
+                required=True,
+            )
+        ]
+        super().__init__(
+            title="Ввод промокода",
+            custom_id="promo_code_modal",
+            components=components,
+        )
 
-    # Проверка на использование промокода
-    if code in used_promocodes:
-        await inter.response.send_message("Промокод уже использован.")
-        return
+    async def callback(self, inter: disnake.ModalInteraction):
+        code = inter.text_values["promo_code_input"]
+        server_id, user_id = str(inter.guild_id), str(inter.user.id)
+        user_data = load_user_data(server_id, user_id)
+        used_promocodes = user_data.get('used_promocodes', [])
+        promo_codes = load_promo_codes()
 
-    if code in promo_codes:
-        action = promo_codes[code]
-        try:
-            value, key = action.split(' =+ ')
-        except ValueError:
-            await inter.response.send_message("Неправильный формат действия промокода.")
+        # Проверка на использование промокода
+        if code in used_promocodes:
+            await inter.response.send_message("Промокод уже использован.", ephemeral=True)
             return
 
-        if key == 'money':
-            user_data['money'] = user_data.get('money', 0) + float(value)
-            await inter.response.send_message(f"Вы получили {value} денег.")
-        elif key in ['bitcoin', 'ethereum', 'bananacoin']:
-            user_data[key] = user_data.get(key, 0) + float(value)
-            await inter.response.send_message(f"Вы получили {value} {key}.")
-        else:
-            await inter.response.send_message("Произошла ошибка при обработке промокода.")
+        if code in promo_codes:
+            action = promo_codes[code]
+            try:
+                value, key = action.split(' =+ ')
+            except ValueError:
+                await inter.response.send_message("Неправильный формат действия промокода.", ephemeral=True)
+                return
 
-        used_promocodes.append(code)
-        user_data['used_promocodes'] = used_promocodes
-    else:
-        await inter.response.send_message("Промокод не найден.")
-    save_user_data(server_id, user_id, user_data)
+            if key == 'money':
+                user_data['money'] = user_data.get('money', 0) + float(value)
+                await inter.response.send_message(f"Вы получили {value} денег.", ephemeral=True)
+            elif key in ['bitcoin', 'ethereum', 'bananacoin']:
+                user_data[key] = user_data.get(key, 0) + float(value)
+                await inter.response.send_message(f"Вы получили {value} {key}.", ephemeral=True)
+            else:
+                await inter.response.send_message("Произошла ошибка при обработке промокода.", ephemeral=True)
+
+            used_promocodes.append(code)
+            user_data['used_promocodes'] = used_promocodes
+        else:
+            await inter.response.send_message("Промокод не найден.", ephemeral=True)
+        save_user_data(server_id, user_id, user_data)
+
+@bot.slash_command(name="promo", description="Позволяет ввести промокод.")
+async def promo(inter):
+    await inter.response.send_modal(PromoCodeModal())
     
 @bot.slash_command(name="exchange", description='Позволяет обменивать валюты')
 async def exchange_cmd(inter, source_currency: str, target_currency: str, amount: float):
