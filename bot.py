@@ -205,7 +205,7 @@ async def SideJob_cmd(inter):
             return
     last_work_time[user_id] = current_time
     bot.last_work_time[server_id] = last_work_time
-    currency_earned = random.randint(WORK_INCOME)
+    currency_earned = random.randint(WORK_INCOME[0], WORK_INCOME[1])
     with open("work_message.txt", "r", encoding="utf-8") as file:
         messages = file.readlines()
         work_message = random.choice(messages).strip()
@@ -232,7 +232,7 @@ async def steal_cmd(inter):
     last_steal_time[user_id] = current_time
     bot.last_steal_time[server_id] = last_steal_time
     if random.random() < 0.5:  # Шанс 50%
-        stolen_amount = random.randint(STEAL_INCOME)
+        stolen_amount = random.randint(STEAL_INCOME[0], STEAL_INCOME[1])
         with open("steal_message.txt", "r", encoding="utf-8") as file:
             messages = file.readlines()
             steal_message = random.choice(messages).strip()
