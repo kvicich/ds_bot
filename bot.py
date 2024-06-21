@@ -477,7 +477,8 @@ class PromoCodeModal(disnake.ui.Modal):
 
         # Проверка на использование промокода
         if code in used_promocodes:
-            await inter.response.send_message("Промокод уже использован.", ephemeral=True)
+            embed = disnake.Embed(title="Ошибка", description="Промокод уже использован.", color=disnake.Color.red())
+            await inter.response.send_message(embed=embed, ephemeral=True)
             return
 
         if code in promo_codes:
@@ -485,23 +486,30 @@ class PromoCodeModal(disnake.ui.Modal):
             try:
                 value, key = action.split(' =+ ')
             except ValueError:
-                await inter.response.send_message("Неправильный формат действия промокода.", ephemeral=True)
+                embed = disnake.Embed(title="Ошибка", description="Неправильный формат действия промокода.", color=disnake.Color.red())
+                await inter.response.send_message(embed=embed, ephemeral=True)
                 return
 
             if key == 'money':
                 user_data['money'] = user_data.get('money', 0) + float(value)
-                await inter.response.send_message(f"Вы получили {value} денег.", ephemeral=True)
+                embed = disnake.Embed(title="Успех", description=f"Вы получили {value} денег.", color=disnake.Color.green())
             elif key in ['bitcoin', 'ethereum', 'bananacoin']:
                 user_data[key] = user_data.get(key, 0) + float(value)
-                await inter.response.send_message(f"Вы получили {value} {key}.", ephemeral=True)
+                embed = disnake.Embed(title="Успех", description=f"Вы получили {value} {key}.", color=disnake.Color.green())
             else:
-                await inter.response.send_message("Произошла ошибка при обработке промокода.", ephemeral=True)
+                embed = disnake.Embed(title="Ошибка", description="Произошла ошибка при обработке промокода.", color=disnake.Color.red())
+                await inter.response.send_message(embed=embed, ephemeral=True)
+                return
 
             used_promocodes.append(code)
             user_data['used_promocodes'] = used_promocodes
         else:
-            await inter.response.send_message("Промокод не найден.", ephemeral=True)
+            embed = disnake.Embed(title="Ошибка", description="Промокод не найден.", color=disnake.Color.red())
+            await inter.response.send_message(embed=embed, ephemeral=True)
+            return
+
         save_user_data(server_id, user_id, user_data)
+        await inter.response.send_message(embed=embed, ephemeral=True)
 
 @bot.slash_command(name="promo", description="Позволяет ввести промокод.")
 async def promo(inter):
