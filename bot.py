@@ -11,10 +11,10 @@ import asyncio
 START_TIME = time.time() # Время запуска (для /bot_stats)
 SERVERS_DATA_DIR = "servers_data"  # Папка с данными серверов
 WORK_COOLDOWN = 150 # Время в секундах между попытками зароботка для /sidejob
-WORK_INCOME = 35, 234 # Заработок с /sidejob
+WORK_INCOME = 25, 234 # Заработок с /sidejob
 WORK_TIMEOUT = 25 # Таймаут в /work
 STEAL_COOLDOWN = 300  # Время в секундах между попытками кражи
-STEAL_INCOME = 50, 510 # Заработок с /steal
+STEAL_INCOME = 50, 500 # Заработок с /steal
 FAILED_STEAL_MIN_LOSS = 15 # Минимальная потеря монет в /steal
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
 MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
