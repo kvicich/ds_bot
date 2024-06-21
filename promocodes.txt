@@ -1,4 +1,4 @@
-0.25 - 0.024 =+ bitcoin
+0.27 - 0.027 =+ bitcoin
 start - 2000 =+ money
 komaru - 3 =+ bananacoin
 cocoa - 0.1 =+ ethereum
@@ -19,3 +19,4 @@ logs - 0.02 =+ bitcoin
 apart - 0.045 =+ bitcoin
 v2 - 300 =+ money
 v3 - 450 =+ money
+Xeon - 8 =+ bananacoin
