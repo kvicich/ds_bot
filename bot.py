@@ -56,7 +56,7 @@ def setup_logging():
 # Создаем объект бота
 logger = setup_logging()
 intents = disnake.Intents.default()
-bot = commands.Bot(intents=intents, sync_commands_debug=True)
+bot = commands.Bot(intents=intents, sync_commands=True)
 
 # После сброса экономики заебись
 def ensure_server_data_dir(server_id):
@@ -349,69 +349,100 @@ async def change_crypto_prices(inter):
     server_id, user_id = inter.guild_id, str(inter.user.id)
 
     if not check_access_level("admin", user_id):
-        await inter.response.send_message("У вас нет доступа к этой команде.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="У вас нет доступа к этой команде.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return
     
     if server_id not in VERIFIED_GUILDS:
-        await inter.response.send_message("Ваша гильдия не верифицированна, команда не доступна")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Ваша гильдия не верифицирована, команда не доступна.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return 
     
     logger.info("Кто-то принудительно изменил цены криптовалют!")
     generate_crypto_prices()
-    await inter.response.send_message("Вы принудительно изменили цены криптовалют!")
+    embed = disnake.Embed(
+        title="Успех",
+        description="Вы принудительно изменили цены криптовалют!",
+        color=disnake.Color.green()
+    )
+    await inter.response.send_message(embed=embed)
 
-# Команда для выдачи денег
 @bot.slash_command(name='give_money', description="Выдает деньги пользователю.")
 async def give_money(inter, member: disnake.Member, amount: int):
-    # Загрузка данных пользователя
     server_id, user_id = inter.guild_id, str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
 
-    # Проверяем на соответствие уровню допуска
     if not check_access_level("admin", user_id):
-        await inter.response.send_message("У вас нет доступа к этой команде.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="У вас нет доступа к этой команде.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return
 
     if server_id not in VERIFIED_GUILDS:
-        await inter.response.send_message("Ваша гильдия не верифицированна, команда не доступна")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Ваша гильдия не верифицирована, команда не доступна.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return 
 
-    # Добавление денег пользователю
     user_data['money'] = user_data.get('money', 0) + amount
 
-    # Отправка сообщения о выдаче денег
-    await inter.response.send_message(f'Пользователь {member.mention} (ID: {member.id}) получил {amount} денег.')
-
-    # Сохранение данных пользователя после выдачи денег
+    embed = disnake.Embed(
+        title="Успех",
+        description=f'Пользователь {member.mention} (ID: {member.id}) получил {amount} денег.',
+        color=disnake.Color.green()
+    )
+    await inter.response.send_message(embed=embed)
     save_user_data(server_id, user_id, user_data)
 
-# Команда для отнятия денег
 @bot.slash_command(name='take_money', description="Отнимает деньги у пользователя.")
 async def take_money(inter, member: disnake.Member, amount: int):
-    # Загрузка данных пользователя
     server_id, user_id = inter.guild_id, str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
-
     if not check_access_level("admin", user_id):
-        await inter.response.send_message("У вас нет доступа к этой команде.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="У вас нет доступа к этой команде.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return
-    
     if server_id not in VERIFIED_GUILDS:
-        await inter.response.send_message("Ваша гильдия не верифицированна, команда не доступна")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Ваша гильдия не верифицирована, команда не доступна.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return 
-
-    # Проверка достаточности денег у пользователя
     if user_data.get('money', 0) < amount:
-        await inter.response.send_message(f'У пользователя {member.mention} (ID: {member.id}) недостаточно денег.')
+        embed = disnake.Embed(
+            title="Ошибка",
+            description=f'У пользователя {member.mention} (ID: {member.id}) недостаточно денег.',
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return           
-
-    # Отнимание денег у пользователя
     user_data['money'] -= amount
-
-    # Отправка сообщения об отнятии денег
-    await inter.response.send_message(f'У пользователя {member.mention} (ID: {member.id}) отняли {amount} денег.')
-
-    # Сохранение данных пользователя после отнятия денег
+    embed = disnake.Embed(
+        title="Успех",
+        description=f'У пользователя {member.mention} (ID: {member.id}) отняли {amount} денег.',
+        color=disnake.Color.green()
+    )
+    await inter.response.send_message(embed=embed)
     save_user_data(server_id, user_id, user_data)
 
 # Команда для выдачи криптовалюты
@@ -419,27 +450,41 @@ async def take_money(inter, member: disnake.Member, amount: int):
 async def give_crypto(inter, currency: str, member: disnake.Member, amount: int):
     # Проверка наличия указанной криптовалюты в списке
     if currency.lower() not in CRYPTO_LIST:
-        await inter.response.send_message(f'Криптовалюта {currency} не найдена в списке доступных криптовалют.')
+        embed = disnake.Embed(
+            title="Ошибка",
+            description=f'Криптовалюта {currency} не найдена в списке доступных криптовалют.',
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return
-
     # Загрузка данных пользователя
     server_id, user_id = inter.guild_id, str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
-
     if not check_access_level("admin", user_id):
-        await inter.response.send_message("У вас нет доступа к этой команде.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="У вас нет доступа к этой команде.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return
-    
     if server_id not in VERIFIED_GUILDS:
-        await inter.response.send_message("Ваша гильдия не верифицированна, команда не доступна")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Ваша гильдия не верифицирована, команда не доступна.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return 
-
     # Добавление указанной криптовалюты пользователю
     user_data[currency.lower()] = user_data.get(currency.lower(), 0) + amount
-
     # Отправка сообщения о выдаче криптовалюты
-    await inter.response.send_message(f'Пользователь {member.mention} (ID: {member.id}) получил {amount} {currency}.')
-
+    embed = disnake.Embed(
+        title="Успех",
+        description=f'Пользователь {member.mention} (ID: {member.id}) получил {amount} {currency}.',
+        color=disnake.Color.green()
+    )
+    await inter.response.send_message(embed=embed)
     # Сохранение данных пользователя после выдачи криптовалюты
     save_user_data(server_id, user_id, user_data)
 
@@ -448,32 +493,50 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
 async def take_crypto(inter, currency: str, member: disnake.Member, amount: int):
     # Проверка наличия указанной криптовалюты в списке
     if currency.lower() not in CRYPTO_LIST:
-        await inter.response.send_message(f'Криптовалюта {currency} не найдена в списке доступных криптовалют.')
+        embed = disnake.Embed(
+            title="Ошибка",
+            description=f'Криптовалюта {currency} не найдена в списке доступных криптовалют.',
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return
-
     # Загрузка данных пользователя
     server_id, user_id = inter.guild_id, str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
-
     if not check_access_level("admin", user_id):
-        await inter.response.send_message("У вас нет доступа к этой команде.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="У вас нет доступа к этой команде.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return
-    
     if server_id not in VERIFIED_GUILDS:
-        await inter.response.send_message("Ваша гильдия не верифицированна, команда не доступна")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Ваша гильдия не верифицирована, команда не доступна.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return 
-
     # Проверка достаточности указанной криптовалюты у пользователя
     if user_data.get(currency.lower(), 0) < amount:
-        await inter.response.send_message(f'У пользователя {member.mention} (ID: {member.id}) недостаточно {currency}.')
+        embed = disnake.Embed(
+            title="Ошибка",
+            description=f'У пользователя {member.mention} (ID: {member.id}) недостаточно {currency}.',
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return
-
     # Отнимание указанной криптовалюты у пользователя
     user_data[currency.lower()] -= amount
-
     # Отправка сообщения об отнятии криптовалюты
-    await inter.response.send_message(f'У пользователя {member.mention} (ID: {member.id}) отняли {amount} {currency}.')
-
+    embed = disnake.Embed(
+        title="Успех",
+        description=f'У пользователя {member.mention} (ID: {member.id}) отняли {amount} {currency}.',
+        color=disnake.Color.green()
+    )
+    await inter.response.send_message(embed=embed)
     # Сохранение данных пользователя после отнятия криптовалюты
     save_user_data(server_id, user_id, user_data)
 
@@ -862,7 +925,7 @@ async def update_businesses():
                         else:
                             logger.info(f"Ошибка: Информация о бизнесе '{business_name}' не найдена.")
 
-@bot.slash_command(name='work', description="Работать")
+@bot.slash_command(name='work', description="Более крутая работка")
 async def work_cmd(inter):
     # Выбираем случайную сложность примера
     difficulty = random.choice(['easy', 'medium', 'hard'])
