@@ -280,15 +280,27 @@ async def ping(inter):
     await inter.response.defer()
     end_time = time.time()
     ping_time = round((end_time - start_time) * 1000)
-    await inter.edit_original_message(content=f"Понг! :ping_pong:\n"
-                                      f"Ваш пинг: {ping_time} мс")
+    
+    embed = disnake.Embed(
+        title="Понг! :ping_pong:",
+        description=f"Ваш пинг: {ping_time} мс",
+        color=disnake.Colour.blue(),
+        timestamp=datetime.datetime.now(),
+    )
+    await inter.edit_original_message(embed=embed)
 
-# Команда для просмотра текущих курсов криптовалют
 @bot.slash_command(name='crypto_prices', description='Просмотреть текущие курсы криптовалют.')
 async def crypto_prices_cmd(inter):
     crypto_list = load_crypto_prices()
     prices_str = '\n'.join([f"{crypto_list[currency]['emoji']} {currency.capitalize()}: {crypto_list[currency]['price']} :coin:" for currency in crypto_list])
-    await inter.response.send_message(f"Текущие курсы криптовалют:\n{prices_str}")
+    
+    embed = disnake.Embed(
+        title="Текущие курсы криптовалют",
+        description=prices_str,
+        color=disnake.Colour.gold(),
+        timestamp=datetime.datetime.now(),
+    )
+    await inter.response.send_message(embed=embed)
 
 # Функция для генерации новых цен криптовалют
 def generate_crypto_prices():
