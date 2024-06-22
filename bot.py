@@ -792,6 +792,10 @@ def load_miners_data():
 def get_miners_info(miners_data):
     return "\n".join([f"{miner}: Цена - {miners_data[miner]['price']} :coin:, Хэшрейт - {miners_data[miner]['hashrate']}, Потребление - {miners_data[miner]['electricity_consumption']} :coin: в 5 минут, Поддерживаемые криптовалюты - {', '.join(miners_data[miner]['supported_cryptos'])}" for miner in miners_data])
 
+# Функция для получения информации о майнерах
+def get_miners_info(miners_data):
+    return "\n".join([f"{miner}: Цена - {miners_data[miner]['price']} :coin:, Хэшрейт - {miners_data[miner]['hashrate']}, Потребление - {miners_data[miner]['electricity_consumption']} :coin: в 5 минут, Поддерживаемые криптовалюты - {', '.join(miners_data[miner]['supported_cryptos'])}" for miner in miners_data])
+
 # Функция для отправки длинного сообщения
 async def send_long_message(channel, message_content):
     max_length = 2000
@@ -803,43 +807,116 @@ async def send_long_message(channel, message_content):
 async def miners_info_cmd(inter):
     miners_data = load_miners_data()
     miners_info = get_miners_info(miners_data)
-    await inter.response.send_message("Доступные майнеры:\n")
+    embed = disnake.Embed(
+        title="Доступные майнеры",
+        description="Информация о доступных майнерах:",
+        color=disnake.Color.blue()
+    )
+    await inter.response.send_message(embed=embed)
     await send_long_message(inter.channel, miners_info)
+
+# Функция для получения информации о бизнесах
+def get_business_info(business_data, business):
+    return f"{business}: Цена - {business_data[business]['price']} :coin:, Доход - {business_data[business]['income']}, Потребление - {business_data[business]['consumption']} :coin: в 30 минут"
+
+# Слеш-команда для просмотра информации о бизнесах
+@bot.slash_command(name='business_info', description="Просмотр информации о доступных бизнесах")
+async def business_info(inter):
+    business_data = load_business_data()
+    business_info = ""
+    for business in business_data:
+        business_info += get_business_info(business_data, business) + "\n"
+    embed = disnake.Embed(
+        title="Доступные бизнесы",
+        description="Информация о доступных бизнесах:",
+        color=disnake.Color.blue()
+    )
+    await inter.response.send_message(embed=embed)
+    await send_long_message(inter.channel, business_info)
+
+# Функция для получения информации о апартаментах
+def get_apart_info(apart_data, apart):
+    return f"{apart}: Цена - {apart_data[apart]['price']} :coin:, Уровень - {apart_data[apart]['level']}, Налоги - {apart_data[apart]['taxes']} :coin: в час"
+
+# Слеш-команда для просмотра информации о апартаментах
+@bot.slash_command(name='apart_info', description="Просмотр информации о доступных апартаментах")
+async def apart_info(inter):
+    aparts_data = load_apart_data()
+    apart_info = ""
+    for apart in aparts_data:
+        apart_info += get_apart_info(aparts_data, apart) + "\n"
+    embed = disnake.Embed(
+        title="Доступные апартаменты",
+        description="Информация о доступных апартаментах:",
+        color=disnake.Color.blue()
+    )
+    await inter.response.send_message(embed=embed)
+    await send_long_message(inter.channel, apart_info)
 
 @bot.slash_command(name='start_mining', description="Запуск майнинга")
 async def start_mining_cmd(inter, selected_crypto: str = None):
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
-
     if (server_id, user_id) in mining_tasks:
-        await inter.response.send_message("Майнинг уже запущен.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Майнинг уже запущен.",
+            color=disnake.Colour.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        await inter.response.send_message(embed=embed)
         return
-    
     if selected_crypto is None and "miners" in user_data:
         supported_cryptos = set()
         for miner_name, miner_count in user_data["miners"].items():
             miner_info = load_miners_data()[miner_name]
-            supported_cryptos.update(miner_info["supported_cryptos"])
-        
+            supported_cryptos.update(miner_info["supported_cryptos"])  
         if len(supported_cryptos) > 1:
-            await inter.response.send_message("Пожалуйста, выберите криптовалюту для майнинга: " + ', '.join(supported_cryptos))
+            supported_cryptos_str = ', '.join(supported_cryptos)
+            embed = disnake.Embed(
+                title="Выбор криптовалюты",
+                description=f"Пожалуйста, выберите криптовалюту для майнинга: {supported_cryptos_str}",
+                color=disnake.Colour.gold(),
+                timestamp=datetime.datetime.now(),
+            )
+            await inter.response.send_message(embed=embed)
             return
         elif len(supported_cryptos) == 1:
             selected_crypto = supported_cryptos.pop()
-
     if selected_crypto and selected_crypto.lower() not in CRYPTO_LIST:
-        await inter.response.send_message("Выбранная криптовалюта не поддерживается.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Выбранная криптовалюта не поддерживается.",
+            color=disnake.Colour.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        await inter.response.send_message(embed=embed)
         return
-    
     if "money" not in user_data or user_data["money"] < 0:
-        await inter.response.send_message("Недостаточно средств для запуска майнинга.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Недостаточно средств для запуска майнинга.",
+            color=disnake.Colour.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        await inter.response.send_message(embed=embed)
         return
-    
     mining_tasks[(server_id, user_id)] = asyncio.create_task(mine_coins(server_id, user_id, selected_crypto))
     if "apart" in user_data:
-        await inter.response.send_message("Майнинг успешно запущен!\n:bulb: У вас есть апартаменты, ваш доход умножен в 1,2 раза")
+        embed = disnake.Embed(
+            title="Майнинг запущен",
+            description="Майнинг успешно запущен!\n:bulb: У вас есть апартаменты, ваш доход умножен в 1,2 раза",
+            color=disnake.Colour.green(),
+            timestamp=datetime.datetime.now(),
+        )
     else:
-        await inter.response.send_message("Майнинг успешно запущен!\n:bulb: С апартаментами доход умножается в 1,2 раза")
+        embed = disnake.Embed(
+            title="Майнинг запущен",
+            description="Майнинг успешно запущен!\n:bulb: С апартаментами доход умножается в 1,2 раза",
+            color=disnake.Colour.green(),
+            timestamp=datetime.datetime.now(),
+        )
+    await inter.response.send_message(embed=embed)
 
 async def mine_coins(server_id, user_id, selected_crypto=None):
     while True:
@@ -877,9 +954,21 @@ async def stop_mining_cmd(inter):
         mining_task = mining_tasks[(server_id, user_id)]
         mining_task.cancel()
         del mining_tasks[(server_id, user_id)]
-        await inter.response.send_message("Майнинг успешно остановлен!")
+        embed = disnake.Embed(
+            title="Майнинг остановлен",
+            description="Майнинг успешно остановлен!",
+            color=disnake.Colour.green(),
+            timestamp=datetime.datetime.now(),
+        )
+        await inter.response.send_message(embed=embed)
     else:
-        await inter.response.send_message("Майнинг не запущен.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Майнинг не запущен.",
+            color=disnake.Colour.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        await inter.response.send_message(embed=embed)
 
 # Загружаем данные бизнесов
 def load_business_data():
@@ -891,7 +980,6 @@ async def buy_business(inter, business: str):
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     business_data = load_business_data()
     user_data = load_user_data(server_id, user_id)
-    
     if business in business_data:
         business_info = business_data[business]
         if business_info["price"] <= user_data.get("money", 0):
@@ -900,32 +988,36 @@ async def buy_business(inter, business: str):
                 user_data["business"] = {}
             user_data["business"][business] = user_data["business"].get(business, 0) + 1
             save_user_data(server_id, user_id, user_data)
-            await inter.response.send_message(f"Бизнес {business} успешно куплен!")
+            
+            embed = disnake.Embed(
+                title="Покупка бизнеса",
+                description=f"Бизнес {business} успешно куплен!",
+                color=disnake.Colour.green(),
+                timestamp=datetime.datetime.now(),
+            )
+            await inter.response.send_message(embed=embed)
         else:
-            await inter.response.send_message("У вас недостаточно средств для покупки этого бизнеса.")
+            embed = disnake.Embed(
+                title="Ошибка",
+                description="У вас недостаточно средств для покупки этого бизнеса.",
+                color=disnake.Colour.red(),
+                timestamp=datetime.datetime.now(),
+            )
+            await inter.response.send_message(embed=embed)
     else:
-        await inter.response.send_message("Данный бизнес не существует.\n"
-                                           "Используйте /business_info для просмотра списка бизнесов")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Данный бизнес не существует.\nИспользуйте /business_info для просмотра списка бизнесов",
+            color=disnake.Colour.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        await inter.response.send_message(embed=embed)
 
-# Функция для получения информации о бизнесах
-def get_business_info(business_data, business):
-    return f"{business}: Цена - {business_data[business]['price']} :coin:, Доход - {business_data[business]['income']}, Потребление - {business_data[business]['consumption']} :coin: в 30 минут"
-
-# Слеш-команда для просмотра информации о бизнесах
-@bot.slash_command(name='business_info', description="Просмотр информации о доступных бизнесах")
-async def business_info(inter):
-    business_data = load_business_data()
-    await inter.response.send_message("Доступные бизнесы: \n")
-    business_info = ""
-    for business in business_data:
-        business_info += get_business_info(business_data, business) + "\n"
-    await send_long_message(inter.channel, business_info)
 
 @bot.slash_command(name='sell_business', description="Продать бизнес")
 async def sell_business(inter, business: str):
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
-    
     if "business" in user_data and business in user_data["business"]:
         business_data = load_business_data()
         if business in business_data:
@@ -935,11 +1027,30 @@ async def sell_business(inter, business: str):
             user_data["money"] = user_money + user_business_count * business_info["price"] * 0.8
             del user_data["business"][business]
             save_user_data(server_id, user_id, user_data)
-            await inter.response.send_message(f"Бизнес {business} успешно продан!")
+            
+            embed = disnake.Embed(
+                title="Продажа бизнеса",
+                description=f"Бизнес {business} успешно продан!",
+                color=disnake.Colour.green(),
+                timestamp=datetime.datetime.now(),
+            )
+            await inter.response.send_message(embed=embed)
         else:
-            await inter.response.send_message("Данный бизнес не существует.")
+            embed = disnake.Embed(
+                title="Ошибка",
+                description="Данный бизнес не существует.",
+                color=disnake.Colour.red(),
+                timestamp=datetime.datetime.now(),
+            )
+            await inter.response.send_message(embed=embed)
     else:
-        await inter.response.send_message("У вас нет такого бизнеса.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="У вас нет такого бизнеса.",
+            color=disnake.Colour.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        await inter.response.send_message(embed=embed)
 
 # Функция для обновления состояния бизнесов
 async def update_businesses():
@@ -969,7 +1080,6 @@ async def work_cmd(inter):
     difficulty = random.choice(['easy', 'medium', 'hard'])
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
-
     # Генерируем пример в зависимости от сложности
     if difficulty == 'easy':
         num1 = random.randint(3, 15)
@@ -980,13 +1090,11 @@ async def work_cmd(inter):
     else:
         num1 = random.randint(6, 50)
         num2 = random.randint(3, 70)
-
     # Выбираем случайный знак операции
-    if difficulty == 'easy' or 'medium':
+    if difficulty in ['easy', 'medium']:
         operation = random.choice(['+', '-'])
     else:
         operation = random.choice(['*', '/'])
-
     # Вычисляем правильный ответ
     if operation == '+':
         correct_answer = num1 + num2
@@ -999,26 +1107,27 @@ async def work_cmd(inter):
         if num2 == 0:
             num2 = 1
         correct_answer = num1 / num2
-
-    # Отправляем пример пользователю
-    await inter.response.send_message(f'Решите пример: {num1} {operation} {num2}')
-
+    # Создаем эмбед для отправки примера пользователю
+    embed = disnake.Embed(
+        title="Решите пример",
+        description=f"{num1} {operation} {num2}",
+        color=disnake.Colour.blue(),
+        timestamp=datetime.datetime.now(),
+    )
+    await inter.response.send_message(embed=embed)
     # Ожидаем ответ от пользователя
     try:
         user_answer = await bot.wait_for('message', check=lambda message: message.author == inter.author and message.channel == inter.channel, timeout=WORK_TIMEOUT)
-        
         # Проверяем, что пользователь отправил не пустое сообщение
         if user_answer.content.strip() == "":
-            await inter.followup.send("Ваше сообщение пустое, попробуйте снова.", ephemeral=True)
+            await inter.followup.send("Ваше сообщение пустое, попробуйте снова.")
             return
-
         # Проверяем операцию и преобразуем ответ пользователя в число, если это не деление
         if operation != '/':
             user_answer = float(user_answer.content)
         else:
             # Преобразуем ответ пользователя в число с плавающей точкой
             user_answer = float(user_answer.content.replace(',', '.'))
-
         # Проверяем ответ пользователя
         if abs(user_answer - correct_answer) < 0.01:  # Учитываем погрешность из-за операций с плавающей точкой
             # Определяем количество монет в зависимости от сложности примера
@@ -1028,59 +1137,81 @@ async def work_cmd(inter):
                 reward = 40
             else:
                 reward = 80
+            # Умножаем награду, если у пользователя есть апартаменты
             if 'apart' in user_data:
-                reward *= 1.5
-                # Добавляем монеты пользователю
-                user_data = load_user_data(inter.guild.id, inter.author.id)
-                user_data['money'] = user_data.get('money', 0) + reward
-                save_user_data(inter.guild.id, inter.author.id, user_data)
-                await inter.followup.send(f'Верно! Вы получаете {reward} монет.\n:bulb: Ваша награда умножена в 1,5 раза', ephemeral=True)
-            else:
-                # Добавляем монеты пользователю
-                user_data = load_user_data(inter.guild.id, inter.author.id)
-                user_data['money'] = user_data.get('money', 0) + reward
-                save_user_data(inter.guild.id, inter.author.id, user_data)
-                await inter.followup.send(f'Верно! Вы получаете {reward} монет.\n:bulb: С апартаментами награда умножается в 1,5 раза', ephemeral=True)
+                reward = int(reward * 1.5)
+            # Добавляем монеты пользователю
+            user_data['money'] = user_data.get('money', 0) + reward
+            save_user_data(server_id, user_id, user_data)
+            # Создаем эмбед для отправки сообщения о правильном ответе и награде
+            embed_correct = disnake.Embed(
+                title="Верно!",
+                description=f"Вы получаете {reward} монет.",
+                color=disnake.Colour.green(),
+                timestamp=datetime.datetime.now(),
+            )
+            await inter.followup.send(embed=embed_correct)
         else:
-            await inter.followup.send('Неверно. Попробуйте еще раз.', ephemeral=True)
+            # Создаем эмбед для отправки сообщения о неправильном ответе
+            embed_incorrect = disnake.Embed(
+                title="Неверно!",
+                description="Попробуйте еще раз.",
+                color=disnake.Colour.red(),
+                timestamp=datetime.datetime.now(),
+            )
+            await inter.followup.send(embed=embed_incorrect)
     except asyncio.TimeoutError:
-        await inter.followup.send('Время вышло. Попробуйте снова.', ephemeral=True)
+        # Создаем эмбед для отправки сообщения о таймауте
+        embed_timeout = disnake.Embed(
+            title="Время вышло!",
+            description="Попробуйте снова.",
+            color=disnake.Colour.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        await inter.followup.send(embed=embed_timeout)
 
 @bot.slash_command(name='bot_stats', description='Показывает статистику по боту')
 async def bot_stats_cmd(inter: disnake.ApplicationCommandInteraction):
     await inter.response.defer()
-
     # Пинг
     latency = round(bot.latency * 1000)  # Пинг в миллисекундах
-
     # Аптайм
     current_time = time.time()
     uptime_seconds = int(current_time - START_TIME)
     uptime_str = time.strftime("%H:%M:%S", time.gmtime(uptime_seconds))
-
     # Информация о текущей гильдии
     guild = inter.guild
     server_id = inter.guild.id
-
     # Проверяем статус гильдии
     if server_id not in VERIFIED_GUILDS:
         guild_status = "Не верифицирована"
     else:
         guild_status = "Верифицирована"
-
-    await inter.followup.send((
-        f"Информация о боте:\n"
-        f"Имя бота: {bot.user}\n"
-        f"Имя гильдии: {guild.name}, Айди гильдии: {guild.id}, Участников: {guild.member_count}\n"
-        f"Статус гильдии: {guild_status}\n"
-        f"Пинг: {latency} ms\n"
-        f"Аптайм: {uptime_str}"
-    ))
+    # Создаем эмбед для отправки статистики
+    embed = disnake.Embed(
+        title="Информация о боте",
+        color=disnake.Colour.blue(),
+        timestamp=datetime.datetime.now(),
+    )
+    embed.add_field(name="Имя бота", value=str(bot.user))
+    embed.add_field(name="Имя гильдии", value=f"{guild.name}, Айди гильдии: {guild.id}, Участников: {guild.member_count}")
+    embed.add_field(name="Статус гильдии", value=guild_status)
+    embed.add_field(name="Пинг", value=f"{latency} ms")
+    embed.add_field(name="Аптайм", value=uptime_str)
+    await inter.followup.send(embed=embed)
 
 @bot.slash_command(name='random_msg', description="Рандомное сообщение")
-async def msg(inter):
+async def random_msg_cmd(inter):
     message = await randy_random()
-    await inter.response.send_message(message)
+    # Создаем эмбед для отправки рандомного сообщения
+    embed = disnake.Embed(
+        title="Рандомное сообщение",
+        description=message,
+        color=disnake.Colour.orange(),
+        timestamp=datetime.datetime.now(),
+    )
+    await inter.response.send_message(embed=embed)
+
 
 # Загружаем данные апартаментов
 def load_apart_data():
@@ -1088,11 +1219,10 @@ def load_apart_data():
         return json.load(f)
 
 @bot.slash_command(name='buy_apart', description="Купить апартаменты")
-async def buy_business(inter, apart: str):
+async def buy_apart(inter, apart: str):
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     apart_data = load_apart_data()
     user_data = load_user_data(server_id, user_id)
-    
     if apart in apart_data:
         apart_info = apart_data[apart]
         if apart_info["price"] <= user_data.get("money", 0):
@@ -1101,32 +1231,23 @@ async def buy_business(inter, apart: str):
                 user_data["apart"] = {}
             user_data["apart"][apart] = user_data["apart"].get(apart, 0) + 1
             save_user_data(server_id, user_id, user_data)
-            await inter.response.send_message(f"Апартаменты {apart} успешно куплены!")
+            # Создаем эмбед для сообщения о покупке апартаментов
+            embed = disnake.Embed(
+                title=f"Апартаменты {apart} успешно куплены!",
+                description=f"Цена: {apart_info['price']} :coin:",
+                color=disnake.Colour.green()
+            )
+            await inter.response.send_message(embed=embed)
         else:
             await inter.response.send_message("У вас недостаточно средств для покупки этих апартаментов.")
     else:
-        await inter.response.send_message("Данные апартаменты не существуюn.\n"
+        await inter.response.send_message("Данные апартаменты не существуют.\n"
                                            "Используйте /apart_info для просмотра списка апартаментов")
-
-# Функция для получения информации о апатартаментах
-def get_apart_info(apart_data, apart):
-    return f"{apart}: Цена - {apart_data[apart]['price']} :coin:, Уровень - {apart_data[apart]['level']}, Налоги - {apart_data[apart]['taxes']} :coin: в час"
-
-# Слеш-команда для просмотра информации о апартаментах
-@bot.slash_command(name='apart_info', description="Просмотр информации о доступных апартаментах")
-async def apart_info(inter):
-    aparts_data = load_apart_data()
-    await inter.response.send_message("Доступные апартаменты: \n")
-    apart_info = ""
-    for apart in aparts_data:
-        apart_info += get_apart_info(aparts_data, apart) + "\n"
-    await send_long_message(inter.channel, apart_info)
 
 @bot.slash_command(name='sell_apart', description="Продать апартаменты")
 async def sell_apart(inter, apart: str):
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
-    
     if "apart" in user_data and apart in user_data["apart"]:
         apart_data = load_apart_data()
         if apart in apart_data:
@@ -1136,7 +1257,13 @@ async def sell_apart(inter, apart: str):
             user_data["money"] = user_money + user_apart_count * apart_info["price"] * 0.8
             del user_data["apart"][apart]
             save_user_data(server_id, user_id, user_data)
-            await inter.response.send_message(f"Апартаменты {apart} успешно проданы!")
+            # Создаем эмбед для сообщения о продаже апартаментов
+            embed = disnake.Embed(
+                title=f"Апартаменты {apart} успешно проданы!",
+                description=f"Вы получили {user_apart_count * apart_info['price'] * 0.8} :coin:",
+                color=disnake.Colour.green()
+            )
+            await inter.response.send_message(embed=embed)
         else:
             await inter.response.send_message("Данные апартаменты не существуют.")
     else:
