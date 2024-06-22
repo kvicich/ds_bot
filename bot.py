@@ -29,6 +29,7 @@ UNDER_CONSTRUCTION = "working.txt" # Сообщения для команд в �
 mining_tasks = {} # Задачи для майнинга
 OWNER_ID = "822112444973056011" # Сюда запишите айди овнера бота
 VERIFIED_GUILDS = ([1203755517072252989])
+CLEANER_COOLDOWN = 300 # Устанавливает переодичность очистки юзердаты
 
 def setup_logging():
     # Создаем логгер
@@ -758,17 +759,17 @@ async def user_info_cmd(inter, user: disnake.User = None):
         business_info = "Бизнесы:\n"
         for business, count in user_data["business"].items():
             business_info += f"{business}: {count}\n"
+    apart_info = ""  # Инициализация пустой строкой
     if "apart" in user_data:
         apart_info = "Апартаменты:\n"
         for apart, count in user_data["apart"].items():
-            apart_info += f"{apart}: {count}"
+            apart_info += f"{apart}: {count}\n"  # Добавлено "\n" в конце строки для новой строки
     embed = disnake.Embed(
         title=f"Информация о пользователе {user_id}",
         description=f'{balance_str}\n\n{crypto_str}\n{miners_info}\n{business_info}\n{apart_info}',
         color=disnake.Color.blue()
     )
     await inter.response.send_message(embed=embed)
-
 # Загружаем данные майнеров
 def load_miners_data():
     with open(MINERS_DATA_PATH, "r") as f:
@@ -942,6 +943,44 @@ async def stop_mining_cmd(inter):
         embed = disnake.Embed(
             title="Ошибка",
             description="Майнинг не запущен.",
+            color=disnake.Colour.red(),
+            timestamp=datetime.datetime.now(),
+        )
+        await inter.response.send_message(embed=embed)
+
+@bot.slash_command(name='sell_miner', description="Продать майнер")
+async def sell_business(inter, miner: str):
+    server_id, user_id = str(inter.guild_id), str(inter.user.id)
+    user_data = load_user_data(server_id, user_id)
+    if "miners" in user_data and miner in user_data["miners"]:
+        miners_data = load_miners_data()
+        if miner in miners_data:
+            miners_info = miners_data[miner]
+            user_money = user_data.get("money", 0)
+            user_miners_count = user_data["miners"][miner]
+            user_data["money"] = user_money + user_miners_count * miners_info["price"] * 0.8
+            del user_data["miners"][miner]
+            save_user_data(server_id, user_id, user_data)
+            
+            embed = disnake.Embed(
+                title="Продажа майнера",
+                description=f"Майнер {miner} успешно продан!",
+                color=disnake.Colour.green(),
+                timestamp=datetime.datetime.now(),
+            )
+            await inter.response.send_message(embed=embed)
+        else:
+            embed = disnake.Embed(
+                title="Ошибка",
+                description="Данный майнер не существует.",
+                color=disnake.Colour.red(),
+                timestamp=datetime.datetime.now(),
+            )
+            await inter.response.send_message(embed=embed)
+    else:
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="У вас нет такого майнера.",
             color=disnake.Colour.red(),
             timestamp=datetime.datetime.now(),
         )
@@ -1188,7 +1227,6 @@ async def random_msg_cmd(inter):
     )
     await inter.response.send_message(embed=embed)
 
-
 # Загружаем данные апартаментов
 def load_apart_data():
     with open(APART_DATA_PATH, "r", encoding="UTF-8") as f:
@@ -1274,7 +1312,28 @@ async def update_apart(): # Ворует у игроков деньги или �
                             logger.debug(f"Обработаны апартаменты пользователя с айди: {user_id}")
                         else:
                             logger.warn(f"Ошибка: Информация о апартаментах '{apart_name}' не найдена.")
-    
+
+def remove_empty_entries(data):
+    if isinstance(data, dict):
+        return {k: remove_empty_entries(v) for k, v in data.items() if v not in [None, '', [], {}, 0]}
+    elif isinstance(data, list):
+        return [remove_empty_entries(i) for i in data if i not in [None, '', [], {}, 0]]
+    return data
+
+async def cleaner(): # Очищает юзердату
+    while True:
+        for server_id in os.listdir(SERVERS_DATA_DIR):
+            server_data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+            if os.path.isdir(server_data_dir):
+                for user_file in os.listdir(server_data_dir):
+                    if user_file.endswith(".json"):
+                        user_id = user_file.split(".")[0]
+                        user_data = load_user_data(int(server_id), user_id)
+                        cleaned_data = remove_empty_entries(user_data)
+                        save_user_data(int(server_id), user_id, cleaned_data)
+        logger.debug("Очищены пустые элементы в данных пользователей")
+        await asyncio.sleep(CLEANER_COOLDOWN)
+
 def get_token():
     token_directory = os.path.dirname(os.path.abspath(__file__))
     token_file_path = os.path.join(token_directory, "TOKEN.txt")
@@ -1303,6 +1362,7 @@ def main():
     bot.loop.create_task(crypto_prices_generator()) # Запускаем генератор цен криптовалюты
     bot.loop.create_task(update_businesses()) # Запускаем проверку бизнесов
     bot.loop.create_task(update_apart()) # Запускаем проверку апартаментов (всем платить налоги!!!)
+    bot.loop.create_task(cleaner())
     bot.run(get_token())
 
 if __name__ == "__main__":
