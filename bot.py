@@ -163,7 +163,8 @@ async def test_adm_cmd(inter):
     server_id, user_id = inter.guild_id, str(inter.user.id)
 
     if server_id not in VERIFIED_GUILDS:
-        return "Ваша гильдия не верифицированна, команда не доступна"
+        embed = disnake.Embed(title="Доступ запрещён", description="Ваша гильдия не верифицированная", timestamp=datetime.datetime.now(), color=disnake.colour.red)
+        await inter.response.send_message(embed=embed)
 
     access_levels = ["owner", "admin", "tester"]
     user_access_level = None
@@ -202,7 +203,12 @@ async def SideJob_cmd(inter):
         time_elapsed = current_time - last_work_time[user_id]
         if time_elapsed < WORK_COOLDOWN:
             time_left = WORK_COOLDOWN - time_elapsed
-            await inter.response.send_message(f'{inter.author.mention}, вы уже работали недавно. Подождите еще {int(time_left)} секунд.')
+            embed = disnake.Embed(
+                title="Ошибка",
+                description=f"{inter.author.mention}, вы недавно уже пытались работать. Подождите еще {int(time_left)} секунд.",
+                color=disnake.Colour.red(),
+                timestamp=datetime.datetime.now(),)
+            await inter.response.send_message(embed=embed)
             return
     last_work_time[user_id] = current_time
     bot.last_work_time[server_id] = last_work_time
@@ -358,11 +364,7 @@ async def change_crypto_prices(inter):
         return
     
     if server_id not in VERIFIED_GUILDS:
-        embed = disnake.Embed(
-            title="Ошибка",
-            description="Ваша гильдия не верифицирована, команда не доступна.",
-            color=disnake.Color.red()
-        )
+        embed = disnake.Embed(title="Доступ запрещён", description="Ваша гильдия не верифицированная", timestamp=datetime.datetime.now(), color=disnake.colour.red)
         await inter.response.send_message(embed=embed)
         return 
     
@@ -390,11 +392,7 @@ async def give_money(inter, member: disnake.Member, amount: int):
         return
 
     if server_id not in VERIFIED_GUILDS:
-        embed = disnake.Embed(
-            title="Ошибка",
-            description="Ваша гильдия не верифицирована, команда не доступна.",
-            color=disnake.Color.red()
-        )
+        embed = disnake.Embed(title="Доступ запрещён", description="Ваша гильдия не верифицированная", timestamp=datetime.datetime.now(), color=disnake.colour.red)
         await inter.response.send_message(embed=embed)
         return 
 
@@ -421,11 +419,7 @@ async def take_money(inter, member: disnake.Member, amount: int):
         await inter.response.send_message(embed=embed)
         return
     if server_id not in VERIFIED_GUILDS:
-        embed = disnake.Embed(
-            title="Ошибка",
-            description="Ваша гильдия не верифицирована, команда не доступна.",
-            color=disnake.Color.red()
-        )
+        embed = disnake.Embed(title="Доступ запрещён", description="Ваша гильдия не верифицированная", timestamp=datetime.datetime.now(), color=disnake.colour.red)
         await inter.response.send_message(embed=embed)
         return 
     if user_data.get('money', 0) < amount:
@@ -469,11 +463,7 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
         await inter.response.send_message(embed=embed)
         return
     if server_id not in VERIFIED_GUILDS:
-        embed = disnake.Embed(
-            title="Ошибка",
-            description="Ваша гильдия не верифицирована, команда не доступна.",
-            color=disnake.Color.red()
-        )
+        embed = disnake.Embed(title="Доступ запрещён", description="Ваша гильдия не верифицированная", timestamp=datetime.datetime.now(), color=disnake.colour.red)
         await inter.response.send_message(embed=embed)
         return 
     # Добавление указанной криптовалюты пользователю
@@ -512,11 +502,7 @@ async def take_crypto(inter, currency: str, member: disnake.Member, amount: int)
         await inter.response.send_message(embed=embed)
         return
     if server_id not in VERIFIED_GUILDS:
-        embed = disnake.Embed(
-            title="Ошибка",
-            description="Ваша гильдия не верифицирована, команда не доступна.",
-            color=disnake.Color.red()
-        )
+        embed = disnake.Embed(title="Доступ запрещён", description="Ваша гильдия не верифицированная", timestamp=datetime.datetime.now(), color=disnake.colour.red)
         await inter.response.send_message(embed=embed)
         return 
     # Проверка достаточности указанной криптовалюты у пользователя
@@ -796,12 +782,6 @@ def get_miners_info(miners_data):
 def get_miners_info(miners_data):
     return "\n".join([f"{miner}: Цена - {miners_data[miner]['price']} :coin:, Хэшрейт - {miners_data[miner]['hashrate']}, Потребление - {miners_data[miner]['electricity_consumption']} :coin: в 5 минут, Поддерживаемые криптовалюты - {', '.join(miners_data[miner]['supported_cryptos'])}" for miner in miners_data])
 
-# Функция для отправки длинного сообщения
-async def send_long_message(channel, message_content):
-    max_length = 2000
-    for chunk in [message_content[i:i+max_length] for i in range(0, len(message_content), max_length)]:
-        await channel.send(chunk)
-
 # Слеш-команда для просмотра информации о майнерах
 @bot.slash_command(name='miners_info', description="Просмотр информации о доступных майнерах")
 async def miners_info_cmd(inter):
@@ -809,11 +789,10 @@ async def miners_info_cmd(inter):
     miners_info = get_miners_info(miners_data)
     embed = disnake.Embed(
         title="Доступные майнеры",
-        description="Информация о доступных майнерах:",
-        color=disnake.Color.blue()
+        description=f"Информация о доступных майнерах:\n{miners_info}",
+        color=disnake.Color.orange()
     )
     await inter.response.send_message(embed=embed)
-    await send_long_message(inter.channel, miners_info)
 
 # Функция для получения информации о бизнесах
 def get_business_info(business_data, business):
@@ -828,11 +807,10 @@ async def business_info(inter):
         business_info += get_business_info(business_data, business) + "\n"
     embed = disnake.Embed(
         title="Доступные бизнесы",
-        description="Информация о доступных бизнесах:",
-        color=disnake.Color.blue()
+        description=f"Информация о доступных бизнесах:\n{business_info}",
+        color=disnake.Color.orange()
     )
     await inter.response.send_message(embed=embed)
-    await send_long_message(inter.channel, business_info)
 
 # Функция для получения информации о апартаментах
 def get_apart_info(apart_data, apart):
@@ -847,11 +825,10 @@ async def apart_info(inter):
         apart_info += get_apart_info(aparts_data, apart) + "\n"
     embed = disnake.Embed(
         title="Доступные апартаменты",
-        description="Информация о доступных апартаментах:",
-        color=disnake.Color.blue()
+        description=f"Информация о доступных апартаментах:\n{apart_info}",
+        color=disnake.Color.orange()
     )
     await inter.response.send_message(embed=embed)
-    await send_long_message(inter.channel, apart_info)
 
 @bot.slash_command(name='start_mining', description="Запуск майнинга")
 async def start_mining_cmd(inter, selected_crypto: str = None):
@@ -1012,7 +989,6 @@ async def buy_business(inter, business: str):
             timestamp=datetime.datetime.now(),
         )
         await inter.response.send_message(embed=embed)
-
 
 @bot.slash_command(name='sell_business', description="Продать бизнес")
 async def sell_business(inter, business: str):
