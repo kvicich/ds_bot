@@ -615,7 +615,12 @@ async def promo(inter):
 async def exchange_cmd(inter, source_currency: str, target_currency: str, amount: float):
     # Проверяем, что валюты из списка доступных
     if source_currency.lower() not in CRYPTO_LIST and source_currency.lower() != "money":
-        await inter.response.send_message(f"Валюта {source_currency} не найдена в списке доступных криптовалют и денег.")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description=f"Валюта {source_currency} не найдена в списке доступных криптовалют и денег.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
         return
 
     # Обрабатываем случай обмена денег на криптовалюту
@@ -624,21 +629,27 @@ async def exchange_cmd(inter, source_currency: str, target_currency: str, amount
         server_id, user_id = str(inter.guild_id), str(inter.user.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get("money", 0) < amount:
-            await inter.response.send_message("У вас недостаточно денег для обмена.")
+            embed = disnake.Embed(
+                title="Ошибка",
+                description="У вас недостаточно денег для обмена.",
+                color=disnake.Color.red()
+            )
+            await inter.response.send_message(embed=embed)
             return
-
         # Вычисляем сумму после обмена
         target_rate = CRYPTO_LIST[target_currency.lower()]["price"]
         exchanged_amount = amount / target_rate
         exchanged_rounded_amount = round(exchanged_amount, 6)
-
         # Выполняем обмен
         user_data["money"] -= amount
         user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_rounded_amount
-
         # Сообщаем пользователю об успешном обмене
-        await inter.response.send_message(f"Вы успешно обменяли {amount} денег на {exchanged_rounded_amount} {target_currency}.")
-
+        embed = disnake.Embed(
+            title="Успех",
+            description=f"Вы успешно обменяли {amount} денег на {exchanged_rounded_amount} {target_currency}.",
+            color=disnake.Color.green()
+        )
+        await inter.response.send_message(embed=embed)
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
     
@@ -648,46 +659,57 @@ async def exchange_cmd(inter, source_currency: str, target_currency: str, amount
         server_id, user_id = str(inter.guild_id), str(inter.user.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get(source_currency.lower(), 0) < amount:
-            await inter.response.send_message(f"У вас недостаточно {source_currency} для обмена.")
+            embed = disnake.Embed(
+                title="Ошибка",
+                description=f"У вас недостаточно {source_currency} для обмена.",
+                color=disnake.Color.red()
+            )
+            await inter.response.send_message(embed=embed)
             return
-
         # Вычисляем сумму после обмена
         source_rate = CRYPTO_LIST[source_currency.lower()]["price"]
         exchanged_amount = amount * source_rate
         exchanged_rounded_amount = round(exchanged_amount, 5)
-
         # Выполняем обмен
         user_data["money"] = user_data.get("money", 0) + exchanged_rounded_amount
         user_data[source_currency.lower()] -= amount
-
         # Сообщаем пользователю об успешном обмене
-        await inter.response.send_message(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} денег.")
-
+        embed = disnake.Embed(
+            title="Успех",
+            description=f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} денег.",
+            color=disnake.Color.green()
+        )
+        await inter.response.send_message(embed=embed)
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
-    
     # Обрабатываем обмен криптовалюты на криптовалюту
     else:
         # Получаем текущие курсы валют из списка
         source_rate = CRYPTO_LIST[source_currency.lower()]["price"]
         target_rate = CRYPTO_LIST[target_currency.lower()]["price"]
-
         # Проверяем, что пользователь имеет достаточно криптовалюты для обмена
         server_id, user_id = str(inter.guild_id), str(inter.user.id)
         user_data = load_user_data(server_id, user_id)
         if user_data.get(source_currency.lower(), 0) < amount:
-            await inter.response.send_message(f"У вас недостаточно {source_currency} для обмена.")
+            embed = disnake.Embed(
+                title="Ошибка",
+                description=f"У вас недостаточно {source_currency} для обмена.",
+                color=disnake.Color.red()
+            )
+            await inter.response.send_message(embed=embed)
             return
-
         # Выполняем обмен
         exchanged_amount = amount * (source_rate / target_rate)
         exchanged_rounded_amount = round(exchanged_amount, 5)
         user_data[source_currency.lower()] -= amount
         user_data[target_currency.lower()] = user_data.get(target_currency.lower(), 0) + exchanged_rounded_amount
-
         # Сообщаем пользователю об успешном обмене
-        await inter.response.send_message(f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} {target_currency}.")
-
+        embed = disnake.Embed(
+            title="Успех",
+            description=f"Вы успешно обменяли {amount} {source_currency} на {exchanged_rounded_amount} {target_currency}.",
+            color=disnake.Color.green()
+        )
+        await inter.response.send_message(embed=embed)
         # Сохраняем данные пользователя после обмена
         save_user_data(server_id, user_id, user_data)
 
@@ -697,7 +719,6 @@ async def buy_miner_cmd(inter, miner: str):
     server_id, user_id = str(inter.guild_id), str(inter.user.id)
     miners_data = load_miners_data()
     user_data = load_user_data(server_id, user_id)
-    
     if miner in miners_data:
         miner_info = miners_data[miner]
         if miner_info["price"] <= user_data.get("money", 0):
@@ -706,12 +727,26 @@ async def buy_miner_cmd(inter, miner: str):
                 user_data["miners"] = {}
             user_data["miners"][miner] = user_data["miners"].get(miner, 0) + 1
             save_user_data(server_id, user_id, user_data)
-            await inter.response.send_message(f"Майнер {miner} успешно куплен!")
+            embed = disnake.Embed(
+                title="Покупка успешна",
+                description=f"Майнер {miner} успешно куплен!",
+                color=disnake.Color.green()
+            )
+            await inter.response.send_message(embed=embed)
         else:
-            await inter.response.send_message("У вас недостаточно средств для покупки этого майнера.")
+            embed = disnake.Embed(
+                title="Ошибка",
+                description="У вас недостаточно средств для покупки этого майнера.",
+                color=disnake.Color.red()
+            )
+            await inter.response.send_message(embed=embed)
     else:
-        await inter.response.send_message("Данный майнер не существует.\n"
-                                           "Используйте /miners_info для просмотра списка майнеров")
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="Данный майнер не существует.\nИспользуйте /miners_info для просмотра списка майнеров",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
 
 # Слеш-команда для просмотра информации о пользователе
 @bot.slash_command(name='user_info', description="Просмотр информации о пользователе")
@@ -720,7 +755,6 @@ async def user_info_cmd(inter, user: disnake.User = None):
     user_data = load_user_data(server_id, user_id)
     balance = user_data.get("money", 0)
     crypto_wallet = {key: value for key, value in user_data.items() if key in CRYPTO_LIST}
-    
     balance_str = f'**Баланс:** {balance} :coin:'
     crypto_str = ""
     for currency, data in CRYPTO_LIST.items():
@@ -742,8 +776,12 @@ async def user_info_cmd(inter, user: disnake.User = None):
         apart_info = "Апартаменты:\n"
         for apart, count in user_data["apart"].items():
             apart_info += f"{apart}: {count}"
-    
-    await inter.response.send_message(f'Информация о пользователе {user_id}:\n\n{balance_str}\n\n{crypto_str}\n{miners_info}\n{business_info}\n{apart_info}')
+    embed = disnake.Embed(
+        title=f"Информация о пользователе {user_id}",
+        description=f'{balance_str}\n\n{crypto_str}\n{miners_info}\n{business_info}\n{apart_info}',
+        color=disnake.Color.blue()
+    )
+    await inter.response.send_message(embed=embed)
 
 # Загружаем данные майнеров
 def load_miners_data():
