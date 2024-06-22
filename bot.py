@@ -6,6 +6,7 @@ import logging
 import random
 import time
 import asyncio
+import datetime
 
 # Переменные
 START_TIME = time.time() # Время запуска (для /bot_stats)
@@ -215,7 +216,12 @@ async def SideJob_cmd(inter):
     user_data["money"] = user_balance
     save_user_data(server_id, user_id, user_data)
     work_message = work_message.replace("{currency_earned}", str(currency_earned))
-    await inter.response.send_message(f'{inter.author.mention}, {work_message}.')
+    embed = disnake.Embed(
+    title="Успешно",
+    description=f"{inter.author.mention}, {work_message}",
+    color=disnake.Colour.green(),
+    timestamp=datetime.datetime.now(),)
+    await inter.response.send_message(embed=embed)
 
 # Команда для попытки кражи
 @bot.slash_command(name='steal', description="Попытка украсть что-то.")
@@ -227,7 +233,12 @@ async def steal_cmd(inter):
         time_elapsed = current_time - last_steal_time[user_id]
         if time_elapsed < STEAL_COOLDOWN:
             time_left = STEAL_COOLDOWN - time_elapsed
-            await inter.response.send_message(f'Вы недавно уже пытались что-то украсть. Подождите еще {int(time_left)} секунд.')
+            embed = disnake.Embed(
+                title="Ошибка",
+                description=f"{inter.author.mention}, вы недавно уже пытались что-то украсть. Подождите еще {int(time_left)} секунд.",
+                color=disnake.Colour.red(),
+                timestamp=datetime.datetime.now(),)
+            await inter.response.send_message(embed=embed)
             return
     last_steal_time[user_id] = current_time
     bot.last_steal_time[server_id] = last_steal_time
@@ -242,15 +253,25 @@ async def steal_cmd(inter):
         user_data["money"] = user_balance
         save_user_data(server_id, user_id, user_data)
         steal_message = steal_message.replace("{stolen_amount}", str(stolen_amount))
-        await inter.response.send_message(f'{inter.author.mention}, {steal_message}')
+        embed = disnake.Embed(
+            title="Успех!",
+            description=f'{inter.author.mention}, {steal_message}',
+            color=disnake.Colour.green(),
+            timestamp=datetime.datetime.now(),)
+        await inter.response.send_message(embed=embed)
     else:
         lost_amount = random.randint(FAILED_STEAL_MIN_LOSS, FAILED_STEAL_MAX_LOSS)
         user_data = load_user_data(server_id, user_id)
         user_balance = user_data.get("money", 0)
-        user_balance -= lost_amount  
+        user_balance -= lost_amount
         user_data["money"] = user_balance
         save_user_data(server_id, user_id, user_data)
-        await inter.response.send_message(f"Попытка не удалась, вы потеряли {lost_amount} :coin:")
+        embed = disnake.Embed(
+            title="Неудача",
+            description=f"Попытка не удалась, вы потеряли {lost_amount} :coin:",
+            color=disnake.Colour.red(),
+            timestamp=datetime.datetime.now(),)
+        await inter.response.send_message(embed=embed)
         
 @bot.slash_command(name='ping', description="Проверяет ваш пинг.")
 async def ping(inter):
@@ -504,7 +525,7 @@ class PromoCodeModal(disnake.ui.Modal):
             used_promocodes.append(code)
             user_data['used_promocodes'] = used_promocodes
         else:
-            embed = disnake.Embed(title="Ошибка", description="Промокод не найден.", color=disnake.Color.red())
+            embed = disnake.Embed(title="Ошибка", description="Промокод не найден.", color=disnake.Color.red(), timestamp=datetime.datetime.now())
             await inter.response.send_message(embed=embed)
             return
 
