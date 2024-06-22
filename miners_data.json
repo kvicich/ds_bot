@@ -65,7 +65,7 @@
     },
     "Ultra GPU 4060": {
         "price": 26000,
-        "hashrate": "720",
+        "hashrate": "765",
         "electricity_consumption": "19",
         "supported_cryptos": [
             "ethereum"
