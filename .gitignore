@@ -1,5 +1,4 @@
-TOKEN.txt
-__pycache__/
 servers_data
 crypto_prices.json
 ds_bot.log
+TOKEN.env

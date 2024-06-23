@@ -1,12 +1,13 @@
-import os
-import json
 import disnake
 from disnake.ext import commands
-import logging
-import random
-import time
+import os
+from dotenv import load_dotenv, set_key
 import asyncio
+import json
+import logging
+import time
 import datetime
+import random
 
 # Переменные
 START_TIME = time.time() # Время запуска (для /bot_stats)
@@ -1464,25 +1465,28 @@ async def cleaner():  # Очищает юзердату
         await asyncio.sleep(CLEANER_COOLDOWN)
 
 def get_token():
+    # Определяем путь к файлу TOKEN.env
     token_directory = os.path.dirname(os.path.abspath(__file__))
-    token_file_path = os.path.join(token_directory, "TOKEN.txt")
+    token_file_path = os.path.join(token_directory, "TOKEN.env")
+    # Загружаем переменные окружения из файла TOKEN.env
     if os.path.exists(token_file_path):
-        try:
-            with open(token_file_path, "r") as file:
-                token = file.read().strip()
-                if token:
-                    return token
-                else:
-                    logger.error("Токен не найден в файле TOKEN.txt")
-                    return None
-        except Exception as e:
-            logger.error(f"Ошибка при чтении токена из файла: {e}")
-            return None
+        load_dotenv(token_file_path)
+    # Получаем токен из переменной окружения
+    token = os.getenv("TOKEN")
+    if token:
+        return token
     else:
-        logger.error("Файл TOKEN.txt не найден")
+        if os.path.exists(token_file_path):
+            logger.error("Токен не найден в файле TOKEN.env")
+        else:
+            logger.error("Файл TOKEN.env не найден")
+        # Запрашиваем токен у пользователя
         TOKEN = input("Введите токен:")
+        # Сохраняем токен в файл TOKEN.env
         with open(token_file_path, 'w') as file:
-            file.write(TOKEN)
+            file.write(f"TOKEN={TOKEN}")
+        # Устанавливаем токен как переменную окружения
+        set_key(token_file_path, "TOKEN", TOKEN)
         return TOKEN
 
 def main():
