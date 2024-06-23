@@ -1102,14 +1102,22 @@ async def work_cmd(inter):
     elif difficulty == 'medium':
         num1 = random.randint(10, 80)
         num2 = random.randint(10, 80)
-    else:
+    elif difficulty == 'hard':
         num1 = random.randint(6, 50)
         num2 = random.randint(3, 70)
+    else:
+        await inter.response.send_message("Ошибка обработки сложности")
+        return
+
     # Выбираем случайный знак операции
     if difficulty in ['easy', 'medium']:
         operation = random.choice(['+', '-'])
-    else:
+    elif difficulty == 'hard':
         operation = random.choice(['*', '/'])
+    else:
+        await inter.response.send_message("Ошибка обработки сложности")
+        return
+    
     # Вычисляем правильный ответ
     if operation == '+':
         correct_answer = num1 + num2
@@ -1122,6 +1130,7 @@ async def work_cmd(inter):
         if num2 == 0:
             num2 = 1
         correct_answer = num1 / num2
+
     # Создаем эмбед для отправки примера пользователю
     embed = disnake.Embed(
         title="Решите пример",
@@ -1130,6 +1139,7 @@ async def work_cmd(inter):
         timestamp=datetime.datetime.now(),
     )
     await inter.response.send_message(embed=embed)
+    
     # Ожидаем ответ от пользователя
     try:
         user_answer = await bot.wait_for('message', check=lambda message: message.author == inter.author and message.channel == inter.channel, timeout=WORK_TIMEOUT)
@@ -1150,8 +1160,12 @@ async def work_cmd(inter):
                 reward = 25
             elif difficulty == 'medium':
                 reward = 40
-            else:
+            elif difficulty == 'hard':
                 reward = 80
+            else:
+                embed_error = disnake.Embed(title="Ошибка!", description="Произошла ошибка при обработке сложности", color = disnake.Colour.red, timestamp=datetime.datetime.now())
+                await inter.followup.send(embed=embed_error)
+                return
             # Умножаем награду, если у пользователя есть апартаменты
             if 'apart' in user_data:
                 reward = int(reward * 1.5)
@@ -1362,7 +1376,7 @@ def main():
     bot.loop.create_task(crypto_prices_generator()) # Запускаем генератор цен криптовалюты
     bot.loop.create_task(update_businesses()) # Запускаем проверку бизнесов
     bot.loop.create_task(update_apart()) # Запускаем проверку апартаментов (всем платить налоги!!!)
-    bot.loop.create_task(cleaner())
+    bot.loop.create_task(cleaner()) # Запускаем очистку юзердаты
     bot.run(get_token())
 
 if __name__ == "__main__":
