@@ -1386,7 +1386,17 @@ def remove_empty_entries(data):
         return [remove_empty_entries(i) for i in data if i not in [None, '', [], {}, 0]]
     return data
 
-async def cleaner(): # Очищает юзердату
+def round_user_data(user_data):
+    # Округляет переменные в данных пользователя
+    for key, value in user_data.items():
+        if isinstance(value, (int, float)):
+            if key == 'money':
+                user_data[key] = round(value)
+            else:
+                user_data[key] = round(value, 5)
+    return user_data
+
+async def cleaner():  # Очищает юзердату
     while True:
         for server_id in os.listdir(SERVERS_DATA_DIR):
             server_data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
@@ -1395,6 +1405,7 @@ async def cleaner(): # Очищает юзердату
                     if user_file.endswith(".json"):
                         user_id = user_file.split(".")[0]
                         user_data = load_user_data(int(server_id), user_id)
+                        user_data = round_user_data(user_data)
                         cleaned_data = remove_empty_entries(user_data)
                         save_user_data(int(server_id), user_id, cleaned_data)
         logger.debug("Очищены пустые элементы в данных пользователей")
