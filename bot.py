@@ -379,7 +379,13 @@ async def change_crypto_prices(inter):
     await inter.response.send_message(embed=embed)
 
 @bot.slash_command(name='give_money', description="Выдает деньги пользователю.")
-async def give_money(inter, member: disnake.Member, amount: int):
+async def give_money(inter, member: disnake.Member, amount: str):
+    try:
+        amount = int(amount)
+    except ValueError:
+        embed_value_error = disnake.Embed(title='Ошибка!', description='Вы ввели не число!', color=disnake.Color.red(), timestamp=datetime.datetime.now())
+        await inter.response.send_message(embed=embed_value_error)
+        return
     server_id, user_id = inter.guild_id, str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
 
@@ -408,7 +414,13 @@ async def give_money(inter, member: disnake.Member, amount: int):
     save_user_data(server_id, user_id, user_data)
 
 @bot.slash_command(name='take_money', description="Отнимает деньги у пользователя.")
-async def take_money(inter, member: disnake.Member, amount: int):
+async def take_money(inter, member: disnake.Member, amount: str):
+    try:
+        amount = int(amount)
+    except ValueError:
+        embed_value_error = disnake.Embed(title='Ошибка!', description='Вы ввели не число!', color=disnake.Color.red(), timestamp=datetime.datetime.now())
+        await inter.response.send_message(embed=embed_value_error)
+        return
     server_id, user_id = inter.guild_id, str(inter.user.id)
     user_data = load_user_data(server_id, user_id)
     if not check_access_level("admin", user_id):
@@ -442,7 +454,13 @@ async def take_money(inter, member: disnake.Member, amount: int):
 
 # Команда для выдачи криптовалюты
 @bot.slash_command(name='give_crypto', description="Выдает криптовалюту пользователю.")
-async def give_crypto(inter, currency: str, member: disnake.Member, amount: int):
+async def give_crypto(inter, currency: str, member: disnake.Member, amount: str):
+    try:
+        amount = int(amount)
+    except ValueError:
+        embed_value_error = disnake.Embed(title='Ошибка!', description='Вы ввели не число!', color=disnake.Color.red(), timestamp=datetime.datetime.now())
+        await inter.response.send_message(embed=embed_value_error)
+        return
     # Проверка наличия указанной криптовалюты в списке
     if currency.lower() not in CRYPTO_LIST:
         embed = disnake.Embed(
@@ -481,7 +499,13 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: int)
 
 # Команда для отнятия криптовалюты
 @bot.slash_command(name='take_crypto', description="Отнимает криптовалюту у пользователя.")
-async def take_crypto(inter, currency: str, member: disnake.Member, amount: int):
+async def take_crypto(inter, currency: str, member: disnake.Member, amount: str):
+    try:
+        amount = int(amount)
+    except ValueError:
+        embed_value_error = disnake.Embed(title='Ошибка!', description='Вы ввели не число!', color=disnake.Color.red(), timestamp=datetime.datetime.now())
+        await inter.response.send_message(embed=embed_value_error)
+        return
     # Проверка наличия указанной криптовалюты в списке
     if currency.lower() not in CRYPTO_LIST:
         embed = disnake.Embed(
@@ -1139,7 +1163,7 @@ async def work_cmd(inter):
         timestamp=datetime.datetime.now(),
     )
     await inter.response.send_message(embed=embed)
-    
+
     # Ожидаем ответ от пользователя
     try:
         user_answer = await bot.wait_for('message', check=lambda message: message.author == inter.author and message.channel == inter.channel, timeout=WORK_TIMEOUT)
