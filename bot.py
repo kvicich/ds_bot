@@ -1379,6 +1379,58 @@ async def update_apart(): # Ворует у игроков деньги или �
                         else:
                             logger.warn(f"Ошибка: Информация о апартаментах '{apart_name}' не найдена.")
 
+def delete_user_file(user_id):
+    user_file = f"{user_id}.json"
+    
+    # Проходим по всем поддиректориям в SERVERS_DATA_DIR
+    for server_id in os.listdir(SERVERS_DATA_DIR):
+        server_data_dir = os.path.join(SERVERS_DATA_DIR, server_id)
+        
+        if os.path.isdir(server_data_dir):
+            user_file_path = os.path.join(server_data_dir, user_file)
+            
+            # Проверяем, существует ли файл и является ли он файлом
+            if os.path.isfile(user_file_path):
+                os.remove(user_file_path)
+                return True  # Файл найден и удален, возвращаем True
+                
+    return False  # Файл не найден, возвращаем False
+
+@bot.slash_command(name="del_userdata", description="Удаляет юзердату")
+async def del_ud_cmd(inter, user: disnake.Member):
+    server_id, user_id2 = inter.guild_id, str(inter.user.id)
+    if not check_access_level("admin", user_id2):
+        embed = disnake.Embed(
+            title="Ошибка",
+            description="У вас нет доступа к этой команде.",
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
+        return
+    if server_id not in VERIFIED_GUILDS:
+        embed = disnake.Embed(
+            title="Доступ запрещён",
+            description="Ваша гильдия не верифицированная",
+            timestamp=datetime.datetime.now(),
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed)
+        return
+    if delete_user_file(user.id):
+        embed_success = disnake.Embed(
+            title='Успешно!',
+            description=f'Файл пользователя {user.display_name} успешно удален.',
+            color=disnake.Color.green()
+        )
+        await inter.response.send_message(embed=embed_success)
+    else:
+        embed_error = disnake.Embed(
+            title='Ошибка!',
+            description=f'Файл пользователя {user.display_name} не найден.',
+            color=disnake.Color.red()
+        )
+        await inter.response.send_message(embed=embed_error)
+
 def remove_empty_entries(data):
     if isinstance(data, dict):
         return {k: remove_empty_entries(v) for k, v in data.items() if v not in [None, '', [], {}, 0]}
