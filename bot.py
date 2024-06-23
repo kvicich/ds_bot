@@ -380,10 +380,17 @@ async def change_crypto_prices(inter):
 
 @bot.slash_command(name='give_money', description="Выдает деньги пользователю.")
 async def give_money(inter, member: disnake.Member, amount: str):
+    # Попытка преобразовать amount в число
     try:
-        amount = int(amount)
+        # Заменяем запятую на точку и преобразуем в float
+        amount = float(amount.replace(',', '.'))
     except ValueError:
-        embed_value_error = disnake.Embed(title='Ошибка!', description='Вы ввели не число!', color=disnake.Color.red(), timestamp=datetime.datetime.now())
+        embed_value_error = disnake.Embed(
+            title='Ошибка!',
+            description='Вы ввели не число!',
+            color=disnake.Color.red(),
+            timestamp=datetime.datetime.now()
+        )
         await inter.response.send_message(embed=embed_value_error)
         return
     server_id, user_id = inter.guild_id, str(inter.user.id)
@@ -415,10 +422,17 @@ async def give_money(inter, member: disnake.Member, amount: str):
 
 @bot.slash_command(name='take_money', description="Отнимает деньги у пользователя.")
 async def take_money(inter, member: disnake.Member, amount: str):
+    # Попытка преобразовать amount в число
     try:
-        amount = int(amount)
+        # Заменяем запятую на точку и преобразуем в float
+        amount = float(amount.replace(',', '.'))
     except ValueError:
-        embed_value_error = disnake.Embed(title='Ошибка!', description='Вы ввели не число!', color=disnake.Color.red(), timestamp=datetime.datetime.now())
+        embed_value_error = disnake.Embed(
+            title='Ошибка!',
+            description='Вы ввели не число!',
+            color=disnake.Color.red(),
+            timestamp=datetime.datetime.now()
+        )
         await inter.response.send_message(embed=embed_value_error)
         return
     server_id, user_id = inter.guild_id, str(inter.user.id)
@@ -455,10 +469,17 @@ async def take_money(inter, member: disnake.Member, amount: str):
 # Команда для выдачи криптовалюты
 @bot.slash_command(name='give_crypto', description="Выдает криптовалюту пользователю.")
 async def give_crypto(inter, currency: str, member: disnake.Member, amount: str):
+    # Попытка преобразовать amount в число
     try:
-        amount = int(amount)
+        # Заменяем запятую на точку и преобразуем в float
+        amount = float(amount.replace(',', '.'))
     except ValueError:
-        embed_value_error = disnake.Embed(title='Ошибка!', description='Вы ввели не число!', color=disnake.Color.red(), timestamp=datetime.datetime.now())
+        embed_value_error = disnake.Embed(
+            title='Ошибка!',
+            description='Вы ввели не число!',
+            color=disnake.Color.red(),
+            timestamp=datetime.datetime.now()
+        )
         await inter.response.send_message(embed=embed_value_error)
         return
     # Проверка наличия указанной криптовалюты в списке
@@ -500,10 +521,17 @@ async def give_crypto(inter, currency: str, member: disnake.Member, amount: str)
 # Команда для отнятия криптовалюты
 @bot.slash_command(name='take_crypto', description="Отнимает криптовалюту у пользователя.")
 async def take_crypto(inter, currency: str, member: disnake.Member, amount: str):
+    # Попытка преобразовать amount в число
     try:
-        amount = int(amount)
+        # Заменяем запятую на точку и преобразуем в float
+        amount = float(amount.replace(',', '.'))
     except ValueError:
-        embed_value_error = disnake.Embed(title='Ошибка!', description='Вы ввели не число!', color=disnake.Color.red(), timestamp=datetime.datetime.now())
+        embed_value_error = disnake.Embed(
+            title='Ошибка!',
+            description='Вы ввели не число!',
+            color=disnake.Color.red(),
+            timestamp=datetime.datetime.now()
+        )
         await inter.response.send_message(embed=embed_value_error)
         return
     # Проверка наличия указанной криптовалюты в списке
