@@ -1204,8 +1204,11 @@ async def work_cmd(inter):
         if operation != '/':
             user_answer = float(user_answer.content)
         else:
-            # Преобразуем ответ пользователя в число с плавающей точкой
-            user_answer = float(user_answer.content.replace(',', '.'))
+            try:
+                # Преобразуем ответ пользователя в число с плавающей точкой
+                user_answer = float(user_answer.content.replace(',', '.'))
+            except ValueError:
+                await inter.followup.send("Ваше сообщение не имеет ответа")
         # Проверяем ответ пользователя
         if abs(user_answer - correct_answer) < 0.01:  # Учитываем погрешность из-за операций с плавающей точкой
             # Определяем количество монет в зависимости от сложности примера
