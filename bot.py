@@ -196,6 +196,16 @@ async def on_ready():
     logger.info("Активность и статус бота изменены")
     logger.info(f"Бот запущен, его имя {bot.user}")
 
+# Логирует заходы в новые гильдии
+@bot.event
+async def on_guild_join(guild):
+    logger.info(f"Бот зашёл в гильдию: {guild.name}")
+
+# Логирует выходы из гильдий
+@bot.event
+async def on_guild_remove(guild):
+    logger.info(f"Бот вышел из гильдии: {guild.name}")
+
 # Команда для подработки
 @bot.slash_command(name='sidejob', description="Работка.")
 async def SideJob_cmd(inter):
