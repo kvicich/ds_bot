@@ -20,8 +20,9 @@ STEAL_INCOME = 50, 500 # Заработок с /steal
 FAILED_STEAL_MIN_LOSS = 15 # Минимальная потеря монет в /steal
 FAILED_STEAL_MAX_LOSS = 350 # Максимальная потеря монет в /steal
 MINERS_DATA_PATH = "miners_data.json" # Файл с датой майнеров
+MINERS_COOLDOWN = 300 # Время обновления майнеров (итерации майнинга) в секундах
 BUSINESS_DATA_PATH = "business_data.json" # Файл с информацией о майнерах
-BUSINESS_COOLDOWN = 900  # Время обновления бизнесов в секундах 60 секунд = 1 минута
+BUSINESS_COOLDOWN = 900  # Время обновления бизнесов в секундах
 INFO_COOLDOWN = 120 # Время в секундах между запросом информации о майнерах/бизнесах
 APART_COOLDOWN = 3600 # Время в секундах для "взыскания" налогов
 APART_DATA_PATH = "apart_data.json" # Файл с данными о апартаментах
@@ -951,7 +952,7 @@ async def start_mining_cmd(inter, selected_crypto: str = None):
 
 async def mine_coins(server_id, user_id, selected_crypto=None):
     while True:
-        await asyncio.sleep(300)
+        await asyncio.sleep(MINERS_COOLDOWN)
         user_data = load_user_data(server_id, user_id)
         if "miners" in user_data:
             for miner_name, miner_count in user_data["miners"].items():
