@@ -381,7 +381,7 @@ async def change_crypto_prices(inter):
         await inter.response.send_message(embed=embed)
         return 
     
-    logger.info("Кто-то принудительно изменил цены криптовалют!")
+    logger.info(f"{inter.user.id} принудительно изменил цены криптовалют!")
     generate_crypto_prices()
     embed = disnake.Embed(
         title="Успех",
